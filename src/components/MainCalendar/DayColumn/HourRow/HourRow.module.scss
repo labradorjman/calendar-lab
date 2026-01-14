@@ -1,0 +1,20 @@
+.hour_row {
+    height: 100px;
+    font-size: 0.85em;
+        
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    
+    .row {
+        position: relative;
+        height: 2px;
+    }
+
+    .text {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        // padding-top: 4px;
+    }
+}

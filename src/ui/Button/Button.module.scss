@@ -1,0 +1,40 @@
+.Button {
+    position: relative;
+    background: unset;
+    border: unset;
+    color: #fff;
+    font-size: 1em;
+    padding: calc(1rem / 2) 1rem;
+    margin: 0;
+    border-radius: 0.5rem;
+    background-color: #052957;
+    transition: all 150ms ease-in-out;
+    z-index: 5;
+
+    > * {
+        pointer-events: none;
+        vertical-align: middle;
+    }
+
+    &:focus {
+        outline: none;
+    }
+
+    &:hover {
+        text-decoration: none;
+        background-color: #093c7e;
+        cursor: pointer;
+    }
+
+    &--sm {
+        padding: 0.25rem 0.5rem;
+    }
+
+    &--md {
+        padding: 0.5rem 0.75rem;
+    }
+
+    &--lg {
+        padding: 0.75rem 1rem;
+    }
+}

@@ -1,0 +1,17 @@
+.time_column {
+    background-color: #2a2a2a;
+    top: 60px;
+
+    display: flex;
+    flex-direction: column;
+    width: 45px;
+    min-height: 0;
+
+    .time_area {
+        background-color: rgb(152, 93, 44);
+    }
+
+    :global(.simplebar-scrollbar::before) {
+        opacity: 0 !important;
+    }
+}

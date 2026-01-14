@@ -1,0 +1,18 @@
+.content {
+    background-color: #555555;
+    height: 1300px;
+
+    display: grid;
+    grid-template-areas:
+        "time_column right_columns";
+
+    .time_column {
+        margin-top: 40px;
+    }
+
+    .right_columns {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+    }
+}

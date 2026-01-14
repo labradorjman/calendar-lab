@@ -1,0 +1,73 @@
+$cell-size: 30px;
+$grid-gap: 0.5rem;
+
+$grid-end: calc($cell-size + calc($grid-gap / 2));
+$grid-center: calc($cell-size + $grid-gap);
+
+.mini_calendar {
+    background-color: #11101e;
+    padding: 0.5rem;
+
+    display: grid;
+    grid-template-columns: $grid-end $grid-center $grid-center $grid-center $grid-center $grid-center $grid-end;
+    grid-template-rows: 30px 38px $grid-end $grid-center $grid-center $grid-center $grid-center $grid-end;
+    grid-template-areas:
+        "header header header header header pagination pagination"
+        "days days days days days days days"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal";
+
+    .header {
+        grid-area: header;
+
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+
+        height: 30px;
+        font-size: 1.25em;
+
+        .month {
+            font-weight: bold;
+        }
+    }
+
+    .pagination {
+        grid-area: pagination;
+
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+    }
+    
+    .weekdays {
+        grid-area: days;
+
+        display: grid;
+        gap: $grid-gap;
+        grid-template-columns: repeat(7, $cell-size);
+
+        .name {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #dfdfdff6;
+        }
+    }
+
+    .grid {
+        grid-area: cal;
+
+        display: grid;
+        gap: $grid-gap;
+        grid-template-columns: repeat(7, $cell-size);
+        grid-template-rows: repeat(6, $cell-size);
+    }
+}

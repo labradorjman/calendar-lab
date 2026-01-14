@@ -1,0 +1,36 @@
+.backlog {
+    background-color: #0d0714;
+
+    .header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+
+        padding: 8px;
+
+        .button {
+            display: flex;
+            align-items: flex;
+            justify-content: center;
+
+            cursor: pointer;
+            user-select: none;
+
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+
+            font-size: 1em;
+            font-weight: bold;
+
+            &:hover {
+                background-color: #5f5f5f9a;
+            }
+
+            span {
+                display: inline-block;
+                line-height: 1;
+            }
+        }
+    }
+}

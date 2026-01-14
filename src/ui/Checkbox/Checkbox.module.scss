@@ -1,0 +1,67 @@
+.checkbox_wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px; // space between checkbox and label
+    height: 36px;
+    width: 100%;
+    cursor: pointer;
+
+    &[data-haserror="true"] {
+        .checkbox_input {
+            border-color: var(--danger);
+        }
+        .error {
+            color: var(--danger);
+        }
+    }
+
+    .checkbox_input {
+        appearance: none; // remove default checkbox styling
+        -webkit-appearance: none;
+        -moz-appearance: none;
+
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        border: 2px solid #80808026;
+        border-radius: var(--gap_xsmall);
+        background-color: rgba(0, 0, 0, 0);
+        transition: all 150ms ease-in-out;
+        cursor: pointer;
+        position: relative;
+
+        &:checked {
+            background-color: var(--accent);
+            border-color: var(--accent);
+
+            &::after {
+                content: "";
+                position: absolute;
+                left: 4px;
+                top: 0px;
+                width: 6px;
+                height: 12px;
+                border: solid #fff;
+                border-width: 0 2px 2px 0;
+                transform: rotate(45deg);
+            }
+        }
+
+        &:focus {
+            outline: none;
+            box-shadow: 0 0 0 1px var(--accent);
+            border-color: var(--accent);
+        }
+
+        &:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+    }
+
+    .label {
+        font-size: var(--font_large);
+        color: #fff;
+        user-select: none;
+    }
+}

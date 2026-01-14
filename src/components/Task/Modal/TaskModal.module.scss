@@ -1,0 +1,62 @@
+.backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 1000;
+
+    pointer-events: auto;
+
+    .modal {
+        background: #1e1e1e;
+        color: white;
+        border-radius: 12px;
+        padding: var(--gap);
+        min-width: 600px;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: auto;
+
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+
+        .content {
+            display: grid;
+            grid-template-columns: 100px 100px 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            grid-template-areas:
+                "name name name gap1 gap1"
+                "desc desc desc desc desc"
+                "dur gap2 imp gap3 gap3";
+
+            gap: var(--gap_small);
+
+            .name_input {
+                grid-area: name;
+            }
+            .description_input {
+                grid-area: desc;
+            }
+            .duration_input {
+                grid-area: dur;
+            }
+            .important_check {
+                grid-area: imp;
+            }
+        }
+
+        .bottom {
+            height: 40px;
+
+            display: flex;
+            justify-content: flex-end;
+        }
+    }
+}

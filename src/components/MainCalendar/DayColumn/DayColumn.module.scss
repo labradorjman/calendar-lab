@@ -1,0 +1,79 @@
+.column {
+    background-color: #29272a;
+    
+    .header {
+        background-color: #545454;
+        
+        cursor: pointer;
+        position: sticky;
+        top: 0;
+        height: 40px;
+
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+
+        .day_label {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 0.5rem;
+
+            font-size: 1.25em;
+        }
+
+        .day_start {
+            display: flex;
+            flex-direction: column;
+            line-height: 1em;
+            font-size: 1em;
+        }
+    }
+
+    .scroll_hidden {
+        :global(.simplebar-scrollbar::before) {
+            opacity: 0 !important;
+        }
+    }
+
+    .header.focused {
+        .name {
+            font-weight: 700;
+        }
+    }
+
+    .content {
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+
+        .task_container {
+            background: linear-gradient(
+                to bottom,
+                #42314b,
+                #1e2332
+            );
+
+        // background-image:
+        //     repeating-linear-gradient(
+        //         to right,
+        //         transparent,
+        //         transparent 310px,
+        //         rgb(128, 128, 128) 310px,
+        //         rgba(128, 128, 128) 312px
+        //     ),
+            
+        //     repeating-linear-gradient(
+        //         to bottom,
+        //         transparent,
+        //         transparent 100px,
+        //         rgba(128, 128, 128) 100px,
+        //         rgba(128, 128, 128) 102px
+        //     );
+
+            flex: 1;
+        }
+    }
+}

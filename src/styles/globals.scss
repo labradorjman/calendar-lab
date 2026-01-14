@@ -1,0 +1,36 @@
+@import "./fonts.scss";
+
+body {
+    font-family: "Satoshi-Medium", sans-serif !important;
+    color: #fff;
+    margin: 0;
+
+    // Fonts
+    --font_xsmall: 0.75em;
+    --font_small: 0.83em;
+    --font_medium: 0.875em;
+    --font_large: 1em;
+
+    // Spacing
+    --gap: 1rem;
+    --gap_xsmall: 0.25rem;
+    --gap_small: 0.5rem;
+    --gap_large: 1.5rem;
+
+    --success: #44bb88;
+    --danger: #ff4d4d;
+    --warning: #eca832;
+
+    --text_primary: #fff;
+    --text_secondary: #a8a8a8;
+
+    --accent: #2d3035;
+}
+
+.simplebar-scrollbar::before {
+    background-color: #f1f1f137 !important;
+}
+
+// .simplebar-placeholder {
+//     display: none !important;
+// }

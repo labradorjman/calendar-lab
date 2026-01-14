@@ -1,0 +1,35 @@
+.layout {
+    height: 100vh;
+    width: 100vw;
+    background-color: #353535;
+    // overflow: hidden;
+
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    grid-template-areas:
+        "side_panel content";
+
+    .side_panel {
+        width: 300px;
+        height: 100%;
+
+        grid-area: side_panel;
+        display: flex;
+        flex-direction: column;
+        
+        > :first-child {
+            height: 300px;
+        }
+
+        > :last-child {
+            flex: 1;
+        }
+    }
+
+    .main_content {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+}

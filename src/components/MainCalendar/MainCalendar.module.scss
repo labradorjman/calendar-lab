@@ -3,10 +3,13 @@
     display: grid;
     grid-template-columns: 45px 1fr;
     grid-template-rows: 1fr;
+    min-height: 0;
 
     .time_column {
         margin-top: 40px;
-        overflow-y: auto;
+        height: calc(100% - 40px);
+        min-height: 0;
+        overflow: hidden;
     }
 
     .right_columns {

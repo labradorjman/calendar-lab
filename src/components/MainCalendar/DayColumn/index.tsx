@@ -57,9 +57,8 @@ export default function DayColumn({ dateString, startHour, endHour, isRightmost}
 
         return () => {
             element?.removeEventListener("scroll", handler);
-            manager.unregister(dateString);
         };
-    }, [dateString]);
+    }, []);
 
     return (
         <div className={styles.column}>

@@ -2,7 +2,6 @@
 
 import styles from "@/components/MainCalendar/DayColumn/TimeColumn/TimeColumn.module.scss";
 import HourRow from "@/components/MainCalendar/DayColumn/HourRow";
-import SimpleBar from "simplebar-react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import type SimpleBarCore from "simplebar-core";
 import { useEffect, useRef } from "react";
@@ -17,7 +16,7 @@ const TIME_COLUMN_NAME = "time_column";
 
 export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnProps) {
     const timeColumnClass = [
-        styles.time_column,
+        styles.column,
         isHidden ? styles.time_hidden : undefined,
     ].filter(Boolean).join(" ");
 
@@ -49,27 +48,21 @@ export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnP
 
     return (
         <div className={timeColumnClass}>
-            <SimpleBar
-                ref={simpleBarRef}
-                style={{ height: "100%" }}
-                autoHide={false}
-            >
-                <div className={styles.time_area}>
-                    {Array.from({ length }).map((_, index) => {
-                        const hour =
-                            isPrevDayStart && index < Math.abs(startHour)
-                                ? 24 + startHour + index
-                                : startHour + index;
+            <div className={styles.time_area}>
+                {Array.from({ length }).map((_, index) => {
+                    const hour =
+                        isPrevDayStart && index < Math.abs(startHour)
+                            ? 24 + startHour + index
+                            : startHour + index;
 
-                        return (
-                            <HourRow
-                                key={hour}
-                                hour={hour}
-                            />
-                        );
-                    })}
-                </div>
-            </SimpleBar>
+                    return (
+                        <HourRow
+                            key={hour}
+                            hour={hour}
+                        />
+                    );
+                })}
+            </div>
         </div>
     );
 }

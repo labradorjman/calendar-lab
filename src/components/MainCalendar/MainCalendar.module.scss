@@ -1,18 +1,18 @@
 .content {
-    background-color: #555555;
-    height: 1300px;
-
+    height: 100%;
     display: grid;
-    grid-template-areas:
-        "time_column right_columns";
+    grid-template-columns: 45px 1fr;
+    grid-template-rows: 1fr;
 
     .time_column {
         margin-top: 40px;
+        overflow-y: auto;
     }
 
     .right_columns {
         display: grid;
         grid-auto-flow: column;
         grid-auto-columns: 1fr;
+        height: 100%;
     }
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.scss";
+import 'simplebar-react/dist/simplebar.min.css';
 import styles from "./layout.module.scss";
 
 import CalendarContextProvider from "@/context";
@@ -26,9 +27,9 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
+    children,
 }: Readonly<{
-  children: React.ReactNode;
+    children: React.ReactNode;
 }>) {
     const today = new Date();
     const todayDate = getDateString(today.getFullYear(), today.getMonth() + 1, today.getDate());

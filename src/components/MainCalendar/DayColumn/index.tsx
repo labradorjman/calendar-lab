@@ -35,8 +35,6 @@ export default function DayColumn({ dateString, startHour, endHour, isRightmost}
         }
 
         setContentHeight(24 * HOUR_HEIGHT);
-
-        const totalHours = endHour - startHour + 1;
         setTaskContainerHeight(24 * HOUR_HEIGHT);
     }, []);
 

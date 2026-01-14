@@ -7,6 +7,7 @@ import DayColumn from "./DayColumn";
 import { useEffect, useRef } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import TimeColumn from "./DayColumn/TimeColumn";
+import SimpleBar from "simplebar-react";
 
 // interface MainCalendarProps {
 //     className: string;
@@ -42,14 +43,17 @@ export default function MainCalendar() {
     
     return (
         <div className={styles.content}>
-            <div className={styles.time_column}>
+            <SimpleBar
+                style={{ maxHeight: "calc(100% - 40px)" }}
+                className={styles.time_column}
+            >
                 <TimeColumn
                     isHidden={false}
                     startHour={0}
                     endHour={23}
                 />
-            </div>
-
+            </SimpleBar>
+            
             <div className={styles.right_columns}>
                 {calendarContext.dateRange.map((dateString, index) => (
                     <DayColumn

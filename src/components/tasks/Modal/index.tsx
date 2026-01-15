@@ -10,9 +10,10 @@ import { createTask } from "@/storage/taskStore";
 interface ModalProps {
     open: boolean;
     onClose: () => void;
+    onTaskCreated: (task: Task) => void;
 }
 
-export default function TaskModal({ open, onClose }: ModalProps) {
+export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) {
     const defaultTask: Omit<Task, "id"> = {
         userId: 1,
         workSessionId: null,
@@ -81,7 +82,9 @@ export default function TaskModal({ open, onClose }: ModalProps) {
             createdAt: new Date().toISOString(),
         }
         const createdTask = createTask(taskToCreate);
-        console.log("Created task", createdTask);
+        createdTask.then(task => {
+            onTaskCreated(task);
+        });
         onClose();
     }
 

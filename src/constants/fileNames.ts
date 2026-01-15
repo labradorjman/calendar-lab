@@ -1,0 +1,1 @@
+export const TASKS_FILE = "tasks.json";

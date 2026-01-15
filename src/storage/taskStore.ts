@@ -3,8 +3,7 @@
 import type { Task } from "@/models/task";
 import { readJson, writeJson } from "./file";
 import { getNextId } from "./meta";
-
-const TASKS_FILE = "tasks.json";
+import { TASKS_FILE } from "@/constants/fileNames";
 
 export async function loadTasks(): Promise<Task[]> {
     return readJson<Task[]>(TASKS_FILE, []);

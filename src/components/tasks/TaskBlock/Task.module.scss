@@ -1,0 +1,39 @@
+.task {
+    width: 100%;
+    background-color: #1390a0;
+
+    padding: 0 var(--gap_xsmall);
+    border-radius: var(--gap_xsmall);
+    box-sizing: border-box;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 24px 1fr 30px;
+    grid-template-areas:
+        "name name"
+        "desc desc"
+        "dur empty";
+
+    .name {
+        grid-area: name;
+        cursor: default;
+    }
+    
+    .description {
+        grid-area: desc;
+        cursor: default;
+
+        font-size: var(--font_medium);
+        font-family: "Satoshi-Regular", sans-serif;
+
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .duration {
+        grid-area: dur;
+    }
+}

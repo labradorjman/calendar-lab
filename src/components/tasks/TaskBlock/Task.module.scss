@@ -14,14 +14,15 @@
         "desc desc"
         "dur empty";
 
+    cursor: default;
+    user-select: none;
+
     .name {
         grid-area: name;
-        cursor: default;
     }
     
     .description {
         grid-area: desc;
-        cursor: default;
 
         font-size: var(--font_medium);
         font-family: "Satoshi-Regular", sans-serif;
@@ -35,5 +36,46 @@
 
     .duration {
         grid-area: dur;
+    }
+
+    &.skeleton {
+        background-color: transparent;
+
+        --dot-color: #1390a0;
+        --dot-size: 4px;
+        --gap-size: 4px;
+        --border-width: 2px;
+        --radius: var(--gap_xsmall);
+
+        border-radius: var(--radius);
+
+        background:
+            repeating-linear-gradient(
+                to right,
+                var(--dot-color) 0 var(--dot-size),
+                transparent var(--dot-size) calc(var(--dot-size) + var(--gap-size))
+            ) top / 100% var(--border-width) no-repeat,
+
+            repeating-linear-gradient(
+                to bottom,
+                var(--dot-color) 0 var(--dot-size),
+                transparent var(--dot-size) calc(var(--dot-size) + var(--gap-size))
+            ) right / var(--border-width) 100% no-repeat,
+
+            repeating-linear-gradient(
+                to right,
+                var(--dot-color) 0 var(--dot-size),
+                transparent var(--dot-size) calc(var(--dot-size) + var(--gap-size))
+            ) bottom / 100% var(--border-width) no-repeat,
+
+            repeating-linear-gradient(
+                to bottom,
+                var(--dot-color) 0 var(--dot-size),
+                transparent var(--dot-size) calc(var(--dot-size) + var(--gap-size))
+            ) left / var(--border-width) 100% no-repeat;
+
+        > * {
+            visibility: hidden;
+        }
     }
 }

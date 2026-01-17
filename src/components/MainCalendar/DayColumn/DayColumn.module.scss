@@ -55,25 +55,11 @@
                 #42314b,
                 #1e2332
             );
-
-        // background-image:
-        //     repeating-linear-gradient(
-        //         to right,
-        //         transparent,
-        //         transparent 310px,
-        //         rgb(128, 128, 128) 310px,
-        //         rgba(128, 128, 128) 312px
-        //     ),
-            
-        //     repeating-linear-gradient(
-        //         to bottom,
-        //         transparent,
-        //         transparent 100px,
-        //         rgba(128, 128, 128) 100px,
-        //         rgba(128, 128, 128) 102px
-        //     );
-
             flex: 1;
+
+            &.hovered {
+                opacity: 0.75;
+            }
         }
     }
 }

@@ -8,24 +8,25 @@ import { HOUR_HEIGHT, WEEK_DAYS } from "@/constants/calendar";
 import { getYearMonthDay } from "@/utils/dateString";
 import { useEffect, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
-import { shiftDay } from "@/utils/days";
+import { useTaskContext } from "@/taskContext";
 
 interface DayColumnProps {
     dateString: string;
-    startHour: number;
-    endHour: number;
     isRightmost: boolean;
 }
 
-export default function DayColumn({ dateString, startHour, endHour, isRightmost}: DayColumnProps) {
+export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     const { year, month, day } = getYearMonthDay(dateString);
     const date = new Date(year, month - 1, day);
-    const { year: prevYear, month: prevMonth, day: prevDay } = shiftDay(year, month, day, -1);
-    const previousDate = new Date(prevYear, prevMonth - 1, prevDay);
+    // const { year: prevYear, month: prevMonth, day: prevDay } = shiftDay(year, month, day, -1);
+    // const previousDate = new Date(prevYear, prevMonth - 1, prevDay);
+
+    const taskContext = useTaskContext();
 
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerHeight, setHeaderHeight] = useState<number>(0);
 
+    const [hovered, setHovered] = useState(false);
     const [contentHeight, setContentHeight] = useState<number>(0);
     const [taskContainerHeight, setTaskContainerHeight] = useState<number>(0);
 
@@ -60,6 +61,16 @@ export default function DayColumn({ dateString, startHour, endHour, isRightmost}
         };
     }, []);
 
+    useEffect(() => {
+        if (!taskContext.subscribeHoveredColumn) return;
+
+        const unsubscribe = taskContext.subscribeHoveredColumn((id) => {
+            setHovered(id === dateString);
+        });
+
+        return () => unsubscribe();
+    }, [taskContext, dateString]);
+
     return (
         <div className={styles.column}>
             <div
@@ -70,26 +81,21 @@ export default function DayColumn({ dateString, startHour, endHour, isRightmost}
                     <span className={styles.name}>{WEEK_DAYS[date.getDay()]}</span>
                     <span className={styles.number}>{day}</span>
                 </div>
-                {/* {startHour <= -4 && (
-                    <div className={styles.day_start}>
-                        <span>Starts</span>
-                        <span>{WEEK_DAYS[previousDate.getDay()]}</span>
-                    </div>
-                )} */}
             </div>
-            
             <SimpleBar
                 ref={simpleBarRef}
                 style={{ maxHeight: `calc(100vh - ${headerHeight}px` }}
-                className={isRightmost ? undefined : styles.scroll_hidden }
+                className={`${isRightmost ? "" : styles.scroll_hidden}`}
             >
                 <div
                     className={styles.content}
                     style={{ height: contentHeight }}
                 >
                     <div
-                        className={styles.task_container}
+                        className={`${styles.task_container} ${hovered ? styles.hovered : ""}`}
+                        data-day-column={dateString}
                         style={{ height: taskContainerHeight }}
+                        
                     >
                         
                     </div>

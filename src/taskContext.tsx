@@ -12,6 +12,8 @@ interface TaskContextProps {
     hoveredColumnIdRef: React.RefObject<string | null>;
     setHoveredColumn: (id: string | null) => void;
     subscribeHoveredColumn?: (callback: (id: string | null) => void) => () => void;
+    setDragDropColumn: (id: string | null) => void;
+    subscribeDragDropColumn?: (callback: (id: string | null) => void) => () => void;
 }
 
 interface TaskContextProviderProps {
@@ -33,32 +35,48 @@ export function useTaskContext() {
     return context;
 }
 
-export default function TaskContextProvider({ children }: { children: React.ReactNode }) {
+export default function TaskContextProvider({ children }: TaskContextProviderProps) {
     const draggedTaskRef = useRef<Task | null>(null);
     const hoveredColumnIdRef = useRef<string | null>(null);
 
-    const subscribers = useRef<((id: string | null) => void)[]>([]);
-
+    // Hovered subscription
+    const hoveredSubcribers = useRef<((id: string | null) => void)[]>([]);
     const subscribeHoveredColumn = (callback: (id: string | null) => void) => {
-        subscribers.current.push(callback);
+        hoveredSubcribers.current.push(callback);
 
-        // Return a proper unsubscribe function
         return () => {
-            subscribers.current = subscribers.current.filter(cb => cb !== callback);
+            hoveredSubcribers.current = hoveredSubcribers.current.filter(cb => cb !== callback);
         };
     };
 
     const setHoveredColumn = (id: string | null) => {
         hoveredColumnIdRef.current = id;
-        subscribers.current.forEach(cb => cb(id));
+        hoveredSubcribers.current.forEach(cb => cb(id));
     };
+
+    // Drag drop subscription
+    const dragDropSubscribers = useRef<((id: string | null) => void)[]>([]);
+    const subscribeDragDropColumn = (callback: (id: string | null) => void) => {
+        dragDropSubscribers.current.push(callback);
+
+        return () => {
+            dragDropSubscribers.current = dragDropSubscribers.current.filter(cb => cb !== callback);
+        };
+    }
+
+    const setDragDropColumn = (id: string | null) => {
+        dragDropSubscribers.current.forEach(cb => cb(id));
+    }
 
     return (
         <TaskContext.Provider value={{
             draggedTaskRef,
             hoveredColumnIdRef,
+            setHoveredColumn,
             subscribeHoveredColumn,
-            setHoveredColumn
+            setDragDropColumn,
+            subscribeDragDropColumn,
+
         }}>
             {children}
         </TaskContext.Provider>

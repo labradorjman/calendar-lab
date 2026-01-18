@@ -9,6 +9,7 @@ import { getYearMonthDay } from "@/utils/dateString";
 import { useEffect, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { useTaskContext } from "@/taskContext";
+import { updateTask } from "@/services/tasks";
 
 interface DayColumnProps {
     dateString: string;
@@ -71,6 +72,29 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         return () => unsubscribe();
     }, [taskContext, dateString]);
 
+    useEffect(() => {
+        if (!taskContext.subscribeDragDropColumn) return;
+
+        const unsubscribe = taskContext.subscribeDragDropColumn((id) => {
+            if (id !== dateString) return;
+
+            if (taskContext.draggedTaskRef.current) {
+                (async () => {
+                    try {
+                        const task = await updateTask(
+                            taskContext.draggedTaskRef.current!.id,
+                            { isBacklogged: false }
+                        );
+                        console.log("Dropped task:", task.id, "at column", dateString);
+                    } catch (err) {
+                        console.error("Failed to update task:", err);
+                    }
+                })();
+            }
+        });
+        return () => unsubscribe();
+    }, [taskContext, dateString]);
+
     return (
         <div className={styles.column}>
             <div
@@ -93,7 +117,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                 >
                     <div
                         className={`${styles.task_container} ${hovered ? styles.hovered : ""}`}
-                        data-day-column={dateString}
+                        data-column={dateString}
                         style={{ height: taskContainerHeight }}
                         
                     >

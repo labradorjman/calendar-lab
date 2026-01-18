@@ -15,6 +15,7 @@ export default function TaskBlock({ task }: TaskProps) {
     // const originalPosRef = useRef<{ x: number; y: number } | null>(null);
 
     const columnsRef = useRef<NodeListOf<HTMLElement> | null>(null);
+    let hoveredId: string | null = null;
     let placeholder: HTMLElement | null = null;
 
     useClickDrag(taskRef, {
@@ -22,7 +23,7 @@ export default function TaskBlock({ task }: TaskProps) {
             if (!taskRef.current) return;
             if (taskContext.draggedTaskRef.current) return;
 
-            columnsRef.current = document.querySelectorAll("[data-day-column");
+            columnsRef.current = document.querySelectorAll("[data-column]");
             taskContext.draggedTaskRef.current = task;
             const rect = taskRef.current.getBoundingClientRect();
 
@@ -41,9 +42,8 @@ export default function TaskBlock({ task }: TaskProps) {
         onDragMove: (dx, dy, pointerX, pointerY) => {
             if (!placeholder) return;
             placeholder.style.transform = `translate(${dx}px, ${dy}px)`;
-
-            let hoveredId: string | null = null;
             
+            let hasMatch = false;
             columnsRef.current?.forEach((element) => {
                 const rect = element.getBoundingClientRect();
 
@@ -53,15 +53,20 @@ export default function TaskBlock({ task }: TaskProps) {
                     pointerY >= rect.top &&
                     pointerY <= rect.bottom
                 ) {
-                    hoveredId = element.getAttribute("data-day-column");
+                    hasMatch = true;
+                    hoveredId = element.getAttribute("data-column");
                 }
             });
 
+            if (!hasMatch) {
+                hoveredId = null;
+            }
             taskContext.setHoveredColumn(hoveredId);
         },
         onDragEnd: () => {
-            taskContext.draggedTaskRef.current = null;
             taskContext.setHoveredColumn(null);
+            taskContext.setDragDropColumn(hoveredId);
+            taskContext.draggedTaskRef.current = null;
 
             if (placeholder) {
                 placeholder.remove();

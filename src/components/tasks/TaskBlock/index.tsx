@@ -17,6 +17,7 @@ export default function TaskBlock({ task }: TaskProps) {
     const columnsRef = useRef<NodeListOf<HTMLElement> | null>(null);
     let hoveredId: string | null = null;
     let placeholder: HTMLElement | null = null;
+    let dragOffsetTop: number | null = null;
 
     useClickDrag(taskRef, {
         onDragStart: () => {
@@ -46,7 +47,6 @@ export default function TaskBlock({ task }: TaskProps) {
             let hasMatch = false;
             columnsRef.current?.forEach((element) => {
                 const rect = element.getBoundingClientRect();
-
                 if (
                     pointerX >= rect.left &&
                     pointerX <= rect.right &&
@@ -55,18 +55,23 @@ export default function TaskBlock({ task }: TaskProps) {
                 ) {
                     hasMatch = true;
                     hoveredId = element.getAttribute("data-column");
+                    dragOffsetTop = Math.max(0, pointerY - rect.top);
                 }
             });
 
             if (!hasMatch) {
                 hoveredId = null;
+                dragOffsetTop = null;
             }
-            taskContext.setHoveredColumn(hoveredId);
+            taskContext.setHoveredColumn({ columnId: hoveredId });
         },
         onDragEnd: () => {
-            taskContext.setHoveredColumn(null);
-            taskContext.setDragDropColumn(hoveredId);
+            taskContext.setHoveredColumn({ columnId: null, topOffset: null });
+            taskContext.setDragDropColumn({ columnId: hoveredId,  topOffset: dragOffsetTop });
             taskContext.draggedTaskRef.current = null;
+
+            hoveredId = null;
+            dragOffsetTop = null;
 
             if (placeholder) {
                 placeholder.remove();
@@ -79,6 +84,8 @@ export default function TaskBlock({ task }: TaskProps) {
             }
         },
     });
+
+
 
     return (
         <div 

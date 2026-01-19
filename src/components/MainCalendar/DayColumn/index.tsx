@@ -10,11 +10,14 @@ import { useEffect, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/tasks";
+import { getHourMinuteString } from "@/utils/time";
 
 interface DayColumnProps {
     dateString: string;
     isRightmost: boolean;
 }
+
+const SNAP_MINS = 15;
 
 export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     const { year, month, day } = getYearMonthDay(dateString);
@@ -65,8 +68,11 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     useEffect(() => {
         if (!taskContext.subscribeHoveredColumn) return;
 
-        const unsubscribe = taskContext.subscribeHoveredColumn((id) => {
-            setHovered(id === dateString);
+        const unsubscribe = taskContext.subscribeHoveredColumn(state => {
+            setHovered(state.columnId === dateString);
+            if (state.columnId === dateString) {
+                console.log("dragging on", dateString, simpleBarRef.current?.getScrollElement()?.scrollTop);
+            }
         });
 
         return () => unsubscribe();
@@ -75,8 +81,8 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     useEffect(() => {
         if (!taskContext.subscribeDragDropColumn) return;
 
-        const unsubscribe = taskContext.subscribeDragDropColumn((id) => {
-            if (id !== dateString) return;
+        const unsubscribe = taskContext.subscribeDragDropColumn(state => {
+            if (state.columnId !== dateString) return;
 
             if (taskContext.draggedTaskRef.current) {
                 (async () => {
@@ -85,7 +91,8 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                             taskContext.draggedTaskRef.current!.id,
                             { isBacklogged: false }
                         );
-                        console.log("Dropped task:", task.id, "at column", dateString);
+                        console.log("Dropped task:", task.id, "at column", dateString, "-- At time",
+                            getHourMinuteString(state.topOffset ?? 0, SNAP_MINS, true));
                     } catch (err) {
                         console.error("Failed to update task:", err);
                     }

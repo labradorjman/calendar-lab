@@ -9,28 +9,30 @@ import TaskBlock from "@/components/tasks/TaskBlock";
 import SimpleBar from "simplebar-react";
 import { useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/tasks";
+import useCalendarStore from "@/store";
 
 export default function Backlog() {
     const taskContext = useTaskContext();
+    const [tasks, updateTasks] = useCalendarStore("tasks");
 
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-    const [tasks, setTasks] = useState<Task[]>([]);
 
     useEffect(() => {
         async function fetchTasks() {
             const res = await fetch("/api/tasks");
             const data: Task[] = await res.json();
-            setTasks(data);
+            
+            updateTasks(() => data);
         }
 
         fetchTasks();
     }, []);
-
-        useEffect(() => {
+    
+    useEffect(() => {
         if (!taskContext.subscribeDragDropColumn) return;
 
-        const unsubscribe = taskContext.subscribeDragDropColumn((id) => {
-            if (id !== "backlog-column") return;
+        const unsubscribe = taskContext.subscribeDragDropColumn(state => {
+            if (state.columnId !== "backlog-column") return;
             if (taskContext.draggedTaskRef.current) {
                 (async () => {
                     try {
@@ -83,7 +85,7 @@ export default function Backlog() {
                 open={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onTaskCreated={(newTask: Task) => {
-                    setTasks(prev => [...prev, newTask]);
+                    updateTasks(prev => [...prev, newTask]);
                 }}
             />
         </div>

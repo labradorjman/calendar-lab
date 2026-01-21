@@ -4,7 +4,7 @@ import styles from "@/components/MainCalendar/DayColumn/DayColumn.module.scss";
 
 import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
-import { HOUR_HEIGHT, WEEK_DAYS } from "@/constants/calendar";
+import { HOUR_HEIGHT, SNAP_MINS, WEEK_DAYS } from "@/constants/calendar";
 import { getYearMonthDay } from "@/utils/dateString";
 import { useEffect, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
@@ -16,8 +16,6 @@ interface DayColumnProps {
     dateString: string;
     isRightmost: boolean;
 }
-
-const SNAP_MINS = 15;
 
 export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     const { year, month, day } = getYearMonthDay(dateString);
@@ -70,9 +68,6 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
 
         const unsubscribe = taskContext.subscribeHoveredColumn(state => {
             setHovered(state.columnId === dateString);
-            if (state.columnId === dateString) {
-                console.log("dragging on", dateString, simpleBarRef.current?.getScrollElement()?.scrollTop);
-            }
         });
 
         return () => unsubscribe();
@@ -92,7 +87,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                             { isBacklogged: false }
                         );
                         console.log("Dropped task:", task.id, "at column", dateString, "-- At time",
-                            getHourMinuteString(state.topOffset ?? 0, SNAP_MINS, true));
+                            getHourMinuteString(state.columnContentTop ?? 0, SNAP_MINS, true));
                     } catch (err) {
                         console.error("Failed to update task:", err);
                     }

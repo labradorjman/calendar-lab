@@ -36,3 +36,17 @@ export function getYearMonthDay(dateString: string): { year: number, month: numb
 
     return { year, month, day };
 }
+
+export function isValidYMD(dateStr: string): boolean {
+    const match = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(dateStr);
+    if (!match) return false;
+
+    const [, y, m, d] = match.map(Number);
+    const date = new Date(y, m - 1, d);
+
+    return (
+        date.getFullYear() === y &&
+        date.getMonth() === m - 1 &&
+        date.getDate() === d
+    );
+}

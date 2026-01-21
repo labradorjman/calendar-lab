@@ -1,5 +1,7 @@
 export const HOUR_HEIGHT = 100;
+export const HEADER_HEIGHT = 40;
 export const TIME_COLUMN_WIDTH = 45;
+export const SNAP_MINS = 15;
 
 export const MONTH_NAMES = [
   "January",
@@ -25,8 +27,6 @@ export function getMonthName(month: number): MonthName {
     }
     return MONTH_NAMES[month - 1];
 }
-
-
 
 export const WEEK_DAYS = [
     "Sun",

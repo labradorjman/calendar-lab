@@ -2,7 +2,7 @@ import { Task } from "@/models/task";
 import styles from "./Task.module.scss";
 import { useRef } from "react";
 import { useClickDrag } from "@/hooks/useClickDrag";
-import { useTaskContext } from "@/taskContext";
+import { HoveredColumnState, useTaskContext } from "@/taskContext";
 
 interface TaskProps {
     task: Task;
@@ -12,15 +12,18 @@ export default function TaskBlock({ task }: TaskProps) {
     const taskContext = useTaskContext();
 
     const taskRef = useRef<HTMLDivElement>(null);
-    // const originalPosRef = useRef<{ x: number; y: number } | null>(null);
-
     const columnsRef = useRef<NodeListOf<HTMLElement> | null>(null);
-    let hoveredId: string | null = null;
     let placeholder: HTMLElement | null = null;
-    let dragOffsetTop: number | null = null;
+    let cursorOffsetTop: number = 0;
+    let hoverState: HoveredColumnState = {
+        columnId: null,
+        columnRight: null,
+        topOffset: null,
+        columnContentTop: null,
+    };
 
     useClickDrag(taskRef, {
-        onDragStart: () => {
+        onDragStart: (_, pointerY) => {
             if (!taskRef.current) return;
             if (taskContext.draggedTaskRef.current) return;
 
@@ -39,39 +42,62 @@ export default function TaskBlock({ task }: TaskProps) {
 
             taskRef.current.classList.add(styles.skeleton);
             taskRef.current.style.pointerEvents = "none";
+
+            cursorOffsetTop = pointerY - rect.top;
         },
         onDragMove: (dx, dy, pointerX, pointerY) => {
             if (!placeholder) return;
+
             placeholder.style.transform = `translate(${dx}px, ${dy}px)`;
-            
-            let hasMatch = false;
-            columnsRef.current?.forEach((element) => {
+
+            let nextState: HoveredColumnState = {
+                columnId: null,
+                columnRight: null,
+                topOffset: null,
+                columnContentTop: null,
+            };
+
+            columnsRef.current?.forEach(element => {
                 const rect = element.getBoundingClientRect();
+
                 if (
                     pointerX >= rect.left &&
                     pointerX <= rect.right &&
                     pointerY >= rect.top &&
                     pointerY <= rect.bottom
                 ) {
-                    hasMatch = true;
-                    hoveredId = element.getAttribute("data-column");
-                    dragOffsetTop = Math.max(0, pointerY - rect.top);
+                    const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
+                    const localTop = screenTop - rect.top;
+
+                    nextState = {
+                        columnId: element.dataset.column ?? null,
+                        columnRight: rect.left + element.offsetWidth,
+                        topOffset: screenTop,
+                        columnContentTop: localTop,
+                    };
                 }
             });
 
-            if (!hasMatch) {
-                hoveredId = null;
-                dragOffsetTop = null;
-            }
-            taskContext.setHoveredColumn({ columnId: hoveredId });
+            hoverState = nextState;
+            taskContext.setHoveredColumn(nextState);
         },
         onDragEnd: () => {
-            taskContext.setHoveredColumn({ columnId: null, topOffset: null });
-            taskContext.setDragDropColumn({ columnId: hoveredId,  topOffset: dragOffsetTop });
+            taskContext.setHoveredColumn({
+                columnId: null,
+                columnRight: null,
+                topOffset: null,
+                columnContentTop: null,
+            });
+
+            taskContext.setDragDropColumn(hoverState);
             taskContext.draggedTaskRef.current = null;
 
-            hoveredId = null;
-            dragOffsetTop = null;
+            hoverState = {
+                columnId: null,
+                columnRight: null,
+                topOffset: null,
+                columnContentTop: null,
+            };
 
             if (placeholder) {
                 placeholder.remove();
@@ -84,8 +110,6 @@ export default function TaskBlock({ task }: TaskProps) {
             }
         },
     });
-
-
 
     return (
         <div 

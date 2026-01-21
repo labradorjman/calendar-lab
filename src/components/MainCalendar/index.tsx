@@ -60,8 +60,6 @@ export default function MainCalendar() {
                     <DayColumn
                         key={dateString}
                         dateString={dateString}
-                        startHour={0}
-                        endHour={23}
                         isRightmost={index === calendarContext.dateRange.length - 1}
                     />
                 ))}

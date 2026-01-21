@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 type UseClickDragOptions = {
     threshold?: number;
     onClick?: () => void;
-    onDragStart?: () => void;
+    onDragStart?: (pointerX: number, pointerY: number) => void;
     onDragMove?: (dx: number, dy: number, pointerX: number, pointerY: number) => void;
     onDragEnd?: () => void;
 };
@@ -49,7 +49,7 @@ export function useClickDrag(
             if (!state.current.dragging) {
                 if (Math.hypot(dx, dy) > threshold) {
                 state.current.dragging = true;
-                onDragStart?.();
+                onDragStart?.(e.clientX, e.clientY);
                 }
             }
 

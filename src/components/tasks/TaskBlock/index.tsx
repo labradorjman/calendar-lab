@@ -4,15 +4,19 @@ import { useRef } from "react";
 import { useClickDrag } from "@/hooks/useClickDrag";
 import { HoveredColumnState, useTaskContext } from "@/taskContext";
 
-interface TaskProps {
+interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
 }
 
-export default function TaskBlock({ task }: TaskProps) {
+export default function TaskBlock({ task, style, ...props }: TaskProps) {
     const taskContext = useTaskContext();
 
     const taskRef = useRef<HTMLDivElement>(null);
     const columnsRef = useRef<NodeListOf<HTMLElement> | null>(null);
+    const columnRectsRef = useRef<
+        { id: string; rect: DOMRect }[]
+    >([]);
+
     let placeholder: HTMLElement | null = null;
     let cursorOffsetTop: number = 0;
     let hoverState: HoveredColumnState = {
@@ -26,6 +30,13 @@ export default function TaskBlock({ task }: TaskProps) {
         onDragStart: (_, pointerY) => {
             if (!taskRef.current) return;
             if (taskContext.draggedTaskRef.current) return;
+
+            columnRectsRef.current = Array.from(
+                document.querySelectorAll<HTMLElement>("[data-column]")
+            ).map(element => ({
+                id: element.dataset.column!,
+                rect: element.getBoundingClientRect(),
+            }));
 
             columnsRef.current = document.querySelectorAll("[data-column]");
             taskContext.draggedTaskRef.current = task;
@@ -57,9 +68,7 @@ export default function TaskBlock({ task }: TaskProps) {
                 columnContentTop: null,
             };
 
-            columnsRef.current?.forEach(element => {
-                const rect = element.getBoundingClientRect();
-
+            columnRectsRef.current.forEach(({ id, rect }) => {
                 if (
                     pointerX >= rect.left &&
                     pointerX <= rect.right &&
@@ -70,8 +79,8 @@ export default function TaskBlock({ task }: TaskProps) {
                     const localTop = screenTop - rect.top;
 
                     nextState = {
-                        columnId: element.dataset.column ?? null,
-                        columnRight: rect.left + element.offsetWidth,
+                        columnId: id,
+                        columnRight: rect.left + rect.width,
                         topOffset: screenTop,
                         columnContentTop: localTop,
                     };
@@ -115,6 +124,8 @@ export default function TaskBlock({ task }: TaskProps) {
         <div 
             ref={taskRef}
             className={styles.task}
+            style={style}
+            {...props}
         >
             <span className={styles.name}>{task.name}</span>
             <span className={styles.description}>{task.description}</span>

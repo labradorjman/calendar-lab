@@ -8,9 +8,19 @@ import { HOUR_HEIGHT, SNAP_MINS, WEEK_DAYS } from "@/constants/calendar";
 import { getYearMonthDay } from "@/utils/dateString";
 import { useEffect, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
-import { useTaskContext } from "@/taskContext";
+import { HoveredColumnState, useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/tasks";
-import { getHourMinuteString } from "@/utils/time";
+import {
+    get24HourTimeString,
+    getStartEndUnixSeconds,
+    postgresTimestamptzToUnix,
+    secondsSinceMidnight,
+    secondsToOffset,
+    unixToPostgresTimestamptz
+} from "@/utils/time";
+import useCalendarStore from "@/store";
+import { handlePromise } from "@/utils/handleError";
+import TaskBlock from "@/components/tasks/TaskBlock";
 
 interface DayColumnProps {
     dateString: string;
@@ -20,15 +30,17 @@ interface DayColumnProps {
 export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     const { year, month, day } = getYearMonthDay(dateString);
     const date = new Date(year, month - 1, day);
-    // const { year: prevYear, month: prevMonth, day: prevDay } = shiftDay(year, month, day, -1);
-    // const previousDate = new Date(prevYear, prevMonth - 1, prevDay);
+
+    const { start: startTime, end: endTime } = getStartEndUnixSeconds(date);
 
     const taskContext = useTaskContext();
+    const [tasks, updateTasks] = useCalendarStore("tasks");
 
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerHeight, setHeaderHeight] = useState<number>(0);
 
-    const [hovered, setHovered] = useState(false);
+    // const [hovered, setHovered] = useState(false);
+    const hoveredRef = useRef(false);
     const [contentHeight, setContentHeight] = useState<number>(0);
     const [taskContainerHeight, setTaskContainerHeight] = useState<number>(0);
 
@@ -42,6 +54,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     }, []);
 
     const manager = useScrollSyncContext();
+    const taskContainerRef = useRef<HTMLDivElement>(null);
     const simpleBarRef = useRef<SimpleBarCore>(null);
 
     useEffect(() => {
@@ -66,36 +79,69 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     useEffect(() => {
         if (!taskContext.subscribeHoveredColumn) return;
 
-        const unsubscribe = taskContext.subscribeHoveredColumn(state => {
-            setHovered(state.columnId === dateString);
-        });
+        return taskContext.subscribeHoveredColumn(state => {
+            hoveredRef.current = state.columnId === dateString;
 
-        return () => unsubscribe();
+            // ONLY toggle class if value changes
+            taskContainerRef.current?.classList.toggle(
+                styles.hovered,
+                hoveredRef.current
+            );
+        });
     }, [taskContext, dateString]);
+
 
     useEffect(() => {
         if (!taskContext.subscribeDragDropColumn) return;
 
-        const unsubscribe = taskContext.subscribeDragDropColumn(state => {
-            if (state.columnId !== dateString) return;
+        const unsubscribe = taskContext.subscribeDragDropColumn(handleDrop);
 
-            if (taskContext.draggedTaskRef.current) {
-                (async () => {
-                    try {
-                        const task = await updateTask(
-                            taskContext.draggedTaskRef.current!.id,
-                            { isBacklogged: false }
-                        );
-                        console.log("Dropped task:", task.id, "at column", dateString, "-- At time",
-                            getHourMinuteString(state.columnContentTop ?? 0, SNAP_MINS, true));
-                    } catch (err) {
-                        console.error("Failed to update task:", err);
-                    }
-                })();
-            }
-        });
         return () => unsubscribe();
     }, [taskContext, dateString]);
+
+    const handleDrop = async (state: HoveredColumnState) => {
+        if (state.columnId !== dateString) return;
+
+        if (taskContext.draggedTaskRef.current) {
+            const time24 = get24HourTimeString(state.columnContentTop ?? 0, SNAP_MINS);
+            const seconds = secondsSinceMidnight(time24);
+
+            const taskId = taskContext.draggedTaskRef.current!.id;
+            const [task, error] = await handlePromise(
+                updateTask(
+                    taskId,
+                    {
+                        startsAt: unixToPostgresTimestamptz(startTime + seconds),
+                        isBacklogged: false,
+                    }
+                )
+            );
+
+            if (!task) {
+                console.error(`Error updating task-{${taskId}}:`, error);
+                return;
+            }
+
+            updateTasks(prev => 
+                prev.map(t => t.id === task.id ? task : t)
+            );
+            console.log("Dropped task:", task.id, "at column", dateString, "-- At time", time24);
+        }
+    }
+
+    const tasksWithUnix = tasks
+        .map(task => ({
+            ...task,
+            startsAtUnix: task.startsAt ? postgresTimestamptzToUnix(task.startsAt) : undefined
+        }));
+
+    const visibleTasks = tasksWithUnix.filter(
+        task =>
+            !task.isBacklogged &&
+            task.startsAtUnix !== undefined &&
+            task.startsAtUnix >= startTime &&
+            task.startsAtUnix < endTime
+    );
 
     return (
         <div className={styles.column}>
@@ -118,12 +164,22 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                     style={{ height: contentHeight }}
                 >
                     <div
-                        className={`${styles.task_container} ${hovered ? styles.hovered : ""}`}
+                        ref={taskContainerRef}
+                        className={`${styles.task_container}`}
                         data-column={dateString}
                         style={{ height: taskContainerHeight }}
                         
                     >
-                        
+                        {visibleTasks.map(task => (
+                            <TaskBlock
+                                key={task.id}
+                                task={task}
+                                style={{
+                                    position: "absolute",
+                                    top: `${secondsToOffset(task.startsAtUnix! - startTime)}px`
+                                }}
+                            />
+                        ))}
                     </div>
                 </div>
             </SimpleBar>

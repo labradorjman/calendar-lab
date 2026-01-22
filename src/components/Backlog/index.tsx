@@ -7,9 +7,10 @@ import TaskModal from "@/components/tasks/Modal";
 import { Task } from "@/models/task";
 import TaskBlock from "@/components/tasks/TaskBlock";
 import SimpleBar from "simplebar-react";
-import { useTaskContext } from "@/taskContext";
+import { HoveredColumnState, useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/tasks";
 import useCalendarStore from "@/store";
+import { handlePromise } from "@/utils/handleError";
 
 export default function Backlog() {
     const taskContext = useTaskContext();
@@ -31,25 +32,39 @@ export default function Backlog() {
     useEffect(() => {
         if (!taskContext.subscribeDragDropColumn) return;
 
-        const unsubscribe = taskContext.subscribeDragDropColumn(state => {
-            if (state.columnId !== "backlog-column") return;
-            if (taskContext.draggedTaskRef.current) {
-                (async () => {
-                    try {
-                        const task = await updateTask(
-                            taskContext.draggedTaskRef.current!.id,
-                            { isBacklogged: true }
-                        );
-                        console.log("Dropped task:", task.id, "at column", "backlog-column");
-                    } catch (err) {
-                        console.error("Failed to update task:", err);
-                    }
-                })();
-            }
-        });
+        const unsubscribe = taskContext.subscribeDragDropColumn(handleDrop);
         return () => unsubscribe();
     }, [taskContext]);
 
+    const handleDrop = async (state: HoveredColumnState) => {
+        if (state.columnId !== "backlog-column") return;
+
+        if (taskContext.draggedTaskRef.current) {
+            const taskId = taskContext.draggedTaskRef.current!.id;
+            const [task, error] = await handlePromise(
+                updateTask(
+                    taskId,
+                    { startsAt: null, isBacklogged: true }
+                )
+            );
+
+            if (!task) {
+                console.error(`Error updating task-{${taskId}}:`, error);
+                return;
+            }
+
+            updateTasks(prev => 
+                prev.map(t => t.id === task.id ? task : t)
+            );
+            console.log("Dropped task:", task.id, "at column", "backlog-column");
+        }
+    }
+
+    const visibleTasks = tasks.filter(
+        task =>
+            task.isBacklogged ||
+            task.startsAt === undefined
+    );
     
     return (
         <div className={styles.backlog}>
@@ -73,7 +88,7 @@ export default function Backlog() {
                     className={styles.task_list}
                     style={{ maxHeight: "100%" }}
                 >
-                    {tasks.map(task => (
+                    {visibleTasks.map(task => (
                         <TaskBlock
                             key={task.id}
                             task={task}

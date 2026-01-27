@@ -3,12 +3,19 @@ import styles from "./Task.module.scss";
 import { useRef } from "react";
 import { useClickDrag } from "@/hooks/useClickDrag";
 import { HoveredColumnState, useTaskContext } from "@/taskContext";
+import { postgresTimestamptzToUnix } from "@/utils/time";
+import { HourTime } from "@/utils/Time/HourTime";
+import { CalendarDate } from "@/utils/Time/CalendarDate";
+import { HEADER_HEIGHT } from "@/constants/column";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
+    calendarDate: CalendarDate;
+    variant?: "default" | "backlogged";
+    getScrollTop: () => number;
 }
 
-export default function TaskBlock({ task, style, ...props }: TaskProps) {
+export default function TaskBlock({ task, calendarDate, variant = "default", getScrollTop, style, ...props }: TaskProps) {
     const taskContext = useTaskContext();
 
     const taskRef = useRef<HTMLDivElement>(null);
@@ -43,10 +50,12 @@ export default function TaskBlock({ task, style, ...props }: TaskProps) {
             const rect = taskRef.current.getBoundingClientRect();
 
             placeholder = taskRef.current.cloneNode(true) as HTMLElement;
+            placeholder.classList.add(styles.placeholder);
             placeholder.style.position = "fixed";
             placeholder.style.left = `${rect.left}px`;
             placeholder.style.top = `${rect.top}px`;
             placeholder.style.width = `${rect.width}px`;
+            placeholder.style.height = `80px`;
             placeholder.style.zIndex = "9999";
             placeholder.style.pointerEvents = "none";
             document.body.appendChild(placeholder);
@@ -68,16 +77,16 @@ export default function TaskBlock({ task, style, ...props }: TaskProps) {
                 columnContentTop: null,
             };
 
-            columnRectsRef.current.forEach(({ id, rect }) => {
+            columnRectsRef.current.forEach(({ id, rect}) => {
                 if (
                     pointerX >= rect.left &&
                     pointerX <= rect.right &&
                     pointerY >= rect.top &&
                     pointerY <= rect.bottom
                 ) {
+                    const scrollTop = getScrollTop();
                     const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
-                    const localTop = screenTop - rect.top;
-
+                    const localTop = screenTop - HEADER_HEIGHT + scrollTop;
                     nextState = {
                         columnId: id,
                         columnRight: rect.left + rect.width,
@@ -85,8 +94,8 @@ export default function TaskBlock({ task, style, ...props }: TaskProps) {
                         columnContentTop: localTop,
                     };
                 }
-            });
-
+            })
+            // console.log("Top offset:", nextState.topOffset, "Column content top:", nextState.columnContentTop);
             hoverState = nextState;
             taskContext.setHoveredColumn(nextState);
         },
@@ -120,17 +129,50 @@ export default function TaskBlock({ task, style, ...props }: TaskProps) {
         },
     });
 
+    const startUnix = task.startsAt
+        ? postgresTimestamptzToUnix(task.startsAt)
+        : null;
+
+    const endUnix = task.startsAt && task.duration > 0
+        ? startUnix! + task.duration
+        : null;
+
+    if (variant === "default") {
+        return (
+            <div 
+                className={styles.task_wrapper}
+                style={style}
+            >
+                <div 
+                    ref={taskRef}
+                    className={styles.task}
+                    {...props}
+                >
+                    <span className={styles.name}>{task.name}</span>
+                    {(!task.isBacklogged && startUnix && endUnix) && (
+                        <span className={styles.time}>{HourTime.fromUnix(startUnix + calendarDate.tzOffsetSeconds).Time12} 
+                        - {HourTime.fromUnix(endUnix + calendarDate.tzOffsetSeconds).Time12WithSuffix}</span>
+                    )}
+                    {task.duration !== 0 && (
+                        <span className={styles.duration}>{(task.duration / 60)} mins</span>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
+    // Backlogged variant
     return (
         <div 
             ref={taskRef}
-            className={styles.task}
+            className={styles.task_backlogged}
             style={style}
             {...props}
         >
             <span className={styles.name}>{task.name}</span>
             <span className={styles.description}>{task.description}</span>
             {task.duration !== 0 && (
-                <span className={styles.duration}>{task.duration}</span>
+                <span className={styles.duration}>{(task.duration / 60)} mins</span>
             )}
         </div>
     )

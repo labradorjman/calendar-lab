@@ -8,8 +8,9 @@ import { useEffect, useRef, useState } from "react";
 import SimpleBar from "simplebar-react";
 import { useTaskContext } from "@/taskContext";
 import { isValidYMD } from "@/utils/dateString";
-import { HEADER_HEIGHT, SNAP_MINS } from "@/constants/calendar";
-import { get24HourTimeString, to12HourTimeFromString } from "@/utils/time";
+import { HEADER_HEIGHT, SNAP_MINUTES } from "@/constants/column";
+import { get24HourMinute } from "@/utils/time";
+import { HourTime } from "@/utils/Time/HourTime";
 
 interface TimeColumnProps {
     isHidden: boolean;
@@ -97,15 +98,15 @@ export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnP
             const scrollTop = simpleBarRef.current?.getScrollElement()?.scrollTop ?? 0;
             // console.log("SCROLL TOP:", scrollTop);
 
-            const time24 = get24HourTimeString(state.columnContentTop ?? 0, SNAP_MINS);
-            const hourMinuteString = to12HourTimeFromString(time24, false);
+            const { hour24, minute } = get24HourMinute(state.columnContentTop ?? 0, SNAP_MINUTES);
+            const hourTime = new HourTime(hour24, minute)
 
             setTimeString(prev => {
-                if(hourMinuteString === prev) {
+                if(hourTime.Time12 === prev) {
                     return prev;
                 }
 
-                return hourMinuteString;
+                return hourTime.Time12;
             })
 
             // console.log("T:", topOffset, "S:", scrollTop, "H:", HEADER_HEIGHT);

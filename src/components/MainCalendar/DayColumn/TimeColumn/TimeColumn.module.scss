@@ -19,6 +19,7 @@ $bg-color: rgb(152, 93, 44);
     position: absolute;
     z-index: 99;
     text-align: center;
+    font-size: var(--font_medium);
     color: rgb(255, 126, 126);
     background-color: $bg-color;
 }

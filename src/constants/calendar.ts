@@ -1,7 +1,4 @@
-export const HOUR_HEIGHT = 100;
-export const HEADER_HEIGHT = 40;
-export const TIME_COLUMN_WIDTH = 45;
-export const SNAP_MINS = 15;
+export const TIMEZONE = "Australia/Sydney";
 
 export const MONTH_NAMES = [
   "January",

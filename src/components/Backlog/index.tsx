@@ -92,6 +92,7 @@ export default function Backlog() {
                         <TaskBlock
                             key={task.id}
                             task={task}
+                            variant="backlogged"
                         />
                     ))}
                 </SimpleBar>

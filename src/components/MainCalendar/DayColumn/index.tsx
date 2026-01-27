@@ -4,23 +4,20 @@ import styles from "@/components/MainCalendar/DayColumn/DayColumn.module.scss";
 
 import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
-import { HOUR_HEIGHT, SNAP_MINS, WEEK_DAYS } from "@/constants/calendar";
+import { TIMEZONE, WEEK_DAYS } from "@/constants/calendar";
+import { HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
 import { getYearMonthDay } from "@/utils/dateString";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { HoveredColumnState, useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/tasks";
-import {
-    get24HourTimeString,
-    getStartEndUnixSeconds,
-    postgresTimestamptzToUnix,
-    secondsSinceMidnight,
-    secondsToOffset,
-    unixToPostgresTimestamptz
-} from "@/utils/time";
+import { get24HourMinute, postgresTimestamptzToUnix } from "@/utils/time";
+import { HourTime } from "@/utils/Time/HourTime";
 import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
 import TaskBlock from "@/components/tasks/TaskBlock";
+import { TASK_MIN_DURATION_SECONDS } from "@/constants/taskLimits";
+import { CalendarDate } from "@/utils/Time/CalendarDate";
 
 interface DayColumnProps {
     dateString: string;
@@ -31,7 +28,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     const { year, month, day } = getYearMonthDay(dateString);
     const date = new Date(year, month - 1, day);
 
-    const { start: startTime, end: endTime } = getStartEndUnixSeconds(date);
+    const calendarDate = new CalendarDate({ format: "datestring", dateString, timezone: TIMEZONE });
 
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
@@ -82,7 +79,6 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         return taskContext.subscribeHoveredColumn(state => {
             hoveredRef.current = state.columnId === dateString;
 
-            // ONLY toggle class if value changes
             taskContainerRef.current?.classList.toggle(
                 styles.hovered,
                 hoveredRef.current
@@ -103,20 +99,32 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         if (state.columnId !== dateString) return;
 
         if (taskContext.draggedTaskRef.current) {
-            const time24 = get24HourTimeString(state.columnContentTop ?? 0, SNAP_MINS);
-            const seconds = secondsSinceMidnight(time24);
+            const duration = taskContext.draggedTaskRef.current.duration;
+            if (duration !== 0 && duration < TASK_MIN_DURATION_SECONDS) {
+                console.log("--- Task must be 15 minutes long");
+                return;
+
+                // Prompt the user to create a work session
+                // Cancelling will send it to backlog
+            }
+
+            const { hour24, minute } = get24HourMinute(state.columnContentTop ?? 0, SNAP_MINUTES);
+            const hourTime = new HourTime(hour24, minute)
 
             const taskId = taskContext.draggedTaskRef.current!.id;
             const [task, error] = await handlePromise(
                 updateTask(
                     taskId,
                     {
-                        startsAt: unixToPostgresTimestamptz(startTime + seconds),
+                        startsAt: calendarDate
+                            .builder()
+                            .addSeconds(hourTime.SecondsSinceMidnight)
+                            .toISOString(),
                         isBacklogged: false,
                     }
                 )
             );
-
+            
             if (!task) {
                 console.error(`Error updating task-{${taskId}}:`, error);
                 return;
@@ -125,64 +133,93 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
             updateTasks(prev => 
                 prev.map(t => t.id === task.id ? task : t)
             );
-            console.log("Dropped task:", task.id, "at column", dateString, "-- At time", time24);
+            console.log("Dropped task:", task.id, "at column", dateString, "-- At time", hourTime.Time24);
         }
     }
 
-    const tasksWithUnix = tasks
-        .map(task => ({
+    const tasksWithUnix = tasks.map(task => {
+        const startsAtUnix = task.startsAt
+            ? postgresTimestamptzToUnix(task.startsAt)
+            : undefined;
+
+        return {
             ...task,
-            startsAtUnix: task.startsAt ? postgresTimestamptzToUnix(task.startsAt) : undefined
-        }));
+            startsAtUnix,
+        };
+    });
 
     const visibleTasks = tasksWithUnix.filter(
         task =>
             !task.isBacklogged &&
             task.startsAtUnix !== undefined &&
-            task.startsAtUnix >= startTime &&
-            task.startsAtUnix < endTime
+            task.startsAtUnix >= calendarDate.startSeconds &&
+            task.startsAtUnix < calendarDate.endSeconds
     );
+
+    function secondsToOffset(seconds: number): number {
+        const minutes = seconds / 60;
+        const spacePerMinute = HOUR_HEIGHT / 60;
+        return minutes * spacePerMinute;
+    }
+
+    const getScrollTop = useCallback(() => {
+        return (
+            simpleBarRef.current
+                ?.getScrollElement()
+                ?.scrollTop ?? 0
+        );
+    }, []);
 
     return (
         <div className={styles.column}>
-            <div
-                ref={headerRef}
-                className={styles.header}
-            >
+            <div ref={headerRef} className={styles.header}>
                 <div className={styles.day_label}>
                     <span className={styles.name}>{WEEK_DAYS[date.getDay()]}</span>
                     <span className={styles.number}>{day}</span>
                 </div>
             </div>
+
             <SimpleBar
                 ref={simpleBarRef}
-                style={{ maxHeight: `calc(100vh - ${headerHeight}px` }}
+                style={{ maxHeight: `calc(100vh - ${headerHeight}px)` }}
                 className={`${isRightmost ? "" : styles.scroll_hidden}`}
             >
-                <div
-                    className={styles.content}
-                    style={{ height: contentHeight }}
-                >
+                <div className={styles.content} style={{ height: contentHeight }}>
                     <div
                         ref={taskContainerRef}
-                        className={`${styles.task_container}`}
+                        className={styles.task_container}
                         data-column={dateString}
                         style={{ height: taskContainerHeight }}
-                        
                     >
-                        {visibleTasks.map(task => (
-                            <TaskBlock
-                                key={task.id}
-                                task={task}
-                                style={{
-                                    position: "absolute",
-                                    top: `${secondsToOffset(task.startsAtUnix! - startTime)}px`
-                                }}
-                            />
-                        ))}
+                        {visibleTasks.map(task => {
+                            const startsAtLocalUnix =
+                                task.startsAtUnix! +
+                                calendarDate.tzOffsetSeconds;
+
+                            return (
+                                <TaskBlock
+                                    key={task.id}
+                                    task={task}
+                                    calendarDate={calendarDate}
+                                    getScrollTop={getScrollTop}
+                                    style={{
+                                        position: "absolute",
+                                        top: `${secondsToOffset(
+                                            startsAtLocalUnix -
+                                                calendarDate.startLocalSeconds
+                                        )}px`,
+                                        height:
+                                            task.duration !== 0
+                                                ? `${(HOUR_HEIGHT / 60) * (task.duration / 60)}px`
+                                                : "auto",
+                                    }}
+                                />
+                            );
+                        })}
                     </div>
                 </div>
             </SimpleBar>
         </div>
     );
+
 }

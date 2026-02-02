@@ -11,8 +11,18 @@ import { HoveredColumnState, useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/tasks";
 import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
+import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 
 export default function Backlog() {
+    const { openContextMenu } = useContextMenu();
+    const menuItems = [
+        {
+            id: "add-task",
+            label: "Add Task",
+            onSelect: () => {setIsModalOpen(true)},
+        },
+    ];
+
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
 
@@ -83,6 +93,16 @@ export default function Backlog() {
             <div
                 className={styles.task_area}
                 data-column={"backlog-column"}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+    
+                    openContextMenu({
+                        x: e.clientX,
+                        y: e.clientY,
+                        items: menuItems,
+                    });
+                }}
             >
                 <SimpleBar
                     className={styles.task_list}

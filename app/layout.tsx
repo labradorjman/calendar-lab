@@ -11,6 +11,7 @@ import MiniCalendar from "@/components/MiniCalendar";
 import Backlog from "@/components/Backlog";
 import ScrollSyncContextProvider from "@/scrollSync/ScrollSyncContext";
 import TaskConextProvider from "@/taskContext";
+import { ContextMenuProvider } from "@/components/_layout/ContextMenu/ContextMenuContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,22 +41,24 @@ export default function RootLayout({
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
-                <CalendarContextProvider
-                    initialSelectedDate={todayDate}
-                    initialDateRange={getNextDates(todayDate, 5)}
-                >
-                    <TaskConextProvider>
-                        <div className={styles.layout}>
-                            <div className={styles.side_panel}>
-                                <MiniCalendar />
-                                <Backlog />
+                <ContextMenuProvider>
+                    <CalendarContextProvider
+                        initialSelectedDate={todayDate}
+                        initialDateRange={getNextDates(todayDate, 5)}
+                    >
+                        <TaskConextProvider>
+                            <div className={styles.layout}>
+                                <div className={styles.side_panel}>
+                                    <MiniCalendar />
+                                    <Backlog />
+                                </div>
+                                <ScrollSyncContextProvider>
+                                    <div className={styles.main_content}>{children}</div>      
+                                </ScrollSyncContextProvider>
                             </div>
-                            <ScrollSyncContextProvider>
-                                <div className={styles.main_content}>{children}</div>      
-                            </ScrollSyncContextProvider>
-                        </div>
-                    </TaskConextProvider>
-                </CalendarContextProvider>
+                        </TaskConextProvider>
+                    </CalendarContextProvider>
+                </ContextMenuProvider>
             </body>
         </html>
     );

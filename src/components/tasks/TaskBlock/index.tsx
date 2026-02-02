@@ -7,17 +7,34 @@ import { postgresTimestamptzToUnix } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { HEADER_HEIGHT } from "@/constants/column";
+import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
+import { deleteTaskFromStore } from "@/store/tasks";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
-    calendarDate: CalendarDate;
+    calendarDate?: CalendarDate;
     variant?: "default" | "backlogged";
-    getScrollTop: () => number;
+    getScrollTop?: () => number;
 }
 
 export default function TaskBlock({ task, calendarDate, variant = "default", getScrollTop, style, ...props }: TaskProps) {
+    const { openContextMenu } = useContextMenu();
+    const menuItems = [
+        {
+            id: "edit-task",
+            label: "Edit Task",
+            onSelect: () => {},
+        },
+        {
+            id: "delete-task",
+            label: "Delete Task",
+            onSelect: () => {deleteTaskFromStore(task.id)},
+        },
+    ];
+
     const taskContext = useTaskContext();
 
+    const tzOffsetSeconds = calendarDate?.tzOffsetSeconds ?? 0;
     const taskRef = useRef<HTMLDivElement>(null);
     const columnsRef = useRef<NodeListOf<HTMLElement> | null>(null);
     const columnRectsRef = useRef<
@@ -84,7 +101,7 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
                     pointerY >= rect.top &&
                     pointerY <= rect.bottom
                 ) {
-                    const scrollTop = getScrollTop();
+                    const scrollTop = getScrollTop?.() ?? 0;
                     const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
                     const localTop = screenTop - HEADER_HEIGHT + scrollTop;
                     nextState = {
@@ -150,8 +167,8 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
                 >
                     <span className={styles.name}>{task.name}</span>
                     {(!task.isBacklogged && startUnix && endUnix) && (
-                        <span className={styles.time}>{HourTime.fromUnix(startUnix + calendarDate.tzOffsetSeconds).Time12} 
-                        - {HourTime.fromUnix(endUnix + calendarDate.tzOffsetSeconds).Time12WithSuffix}</span>
+                        <span className={styles.time}>{HourTime.fromUnix(startUnix + tzOffsetSeconds).Time12} 
+                        - {HourTime.fromUnix(endUnix + tzOffsetSeconds).Time12WithSuffix}</span>
                     )}
                     {task.duration !== 0 && (
                         <span className={styles.duration}>{(task.duration / 60)} mins</span>
@@ -167,7 +184,19 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
             ref={taskRef}
             className={styles.task_backlogged}
             style={style}
-            {...props}
+            onClick={() => {console.log("Clicked on task block")}}
+            onContextMenu={(e) => {
+                console.log("onContextMenu task block");
+                e.preventDefault();
+                e.stopPropagation();
+
+                openContextMenu({
+                    x: e.clientX,
+                    y: e.clientY,
+                    items: menuItems,
+                });
+            }}
+            // {...props}
         >
             <span className={styles.name}>{task.name}</span>
             <span className={styles.description}>{task.description}</span>
@@ -175,5 +204,5 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
                 <span className={styles.duration}>{(task.duration / 60)} mins</span>
             )}
         </div>
-    )
+    );
 }

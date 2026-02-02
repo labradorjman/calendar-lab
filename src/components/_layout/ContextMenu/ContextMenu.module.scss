@@ -1,0 +1,50 @@
+.menu {
+    position: fixed;
+    min-width: 180px;
+    background: var(--surface-1, #1e1e1e);
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.4),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    z-index: 1000;
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 6px;
+
+    background: none;
+    border: none;
+    color: var(--text-primary, #fff);
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    &:active {
+        background: rgba(255, 255, 255, 0.12);
+    }
+}
+
+.danger {
+    color: #ff6b6b;
+
+    &:hover {
+        background: rgba(255, 107, 107, 0.15);
+    }
+}
+
+.divider {
+    height: 1px;
+    margin: 4px 0;
+    background: rgba(255, 255, 255, 0.08);
+}

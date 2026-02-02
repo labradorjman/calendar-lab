@@ -18,6 +18,8 @@ import { handlePromise } from "@/utils/handleError";
 import TaskBlock from "@/components/tasks/TaskBlock";
 import { TASK_MIN_DURATION_SECONDS } from "@/constants/taskLimits";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
+import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
+import { ContextMenuRenderer } from "@/components/_layout/ContextMenu/ContextMenuRenderer";
 
 interface DayColumnProps {
     dateString: string;
@@ -25,6 +27,20 @@ interface DayColumnProps {
 }
 
 export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
+    const { openContextMenu } = useContextMenu();
+    const menuItems = [
+        {
+            id: "add-task",
+            label: "Add Task",
+            onSelect: () => {},
+        },
+        {
+            id: "create-work-session",
+            label: "Create Work Session",
+            onSelect: () => {},
+        },
+    ];
+
     const { year, month, day } = getYearMonthDay(dateString);
     const date = new Date(year, month - 1, day);
 
@@ -171,7 +187,20 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     }, []);
 
     return (
-        <div className={styles.column}>
+        <div
+            className={styles.column}
+            onContextMenu={(e) => {
+                console.log("onContextMenu daycolumn");
+                e.preventDefault();
+                e.stopPropagation();
+
+                openContextMenu({
+                    x: e.clientX,
+                    y: e.clientY,
+                    items: menuItems,
+                });
+            }}
+        >
             <div ref={headerRef} className={styles.header}>
                 <div className={styles.day_label}>
                     <span className={styles.name}>{WEEK_DAYS[date.getDay()]}</span>
@@ -219,7 +248,8 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                     </div>
                 </div>
             </SimpleBar>
+
+            <ContextMenuRenderer/>
         </div>
     );
-
 }

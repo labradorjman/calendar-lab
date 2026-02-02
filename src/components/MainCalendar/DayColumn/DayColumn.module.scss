@@ -1,3 +1,12 @@
+:global(.simplebar-track),
+:global(.simplebar-mask) {
+    pointer-events: none !important;
+}
+
+:global(.simplebar-content-wrapper) {
+    pointer-events: auto !important;
+}
+
 .column {
     background-color: #29272a;
     
@@ -50,6 +59,7 @@
         align-items: stretch;
 
         .task_container {
+            position: relative;
             background: linear-gradient(
                 to bottom,
                 #42314b,

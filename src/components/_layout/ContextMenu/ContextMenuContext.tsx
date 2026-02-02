@@ -5,9 +5,9 @@ import {
     useContext,
     useState,
     ReactNode,
-    useEffect,
 } from "react";
 import { MenuState } from "@/types/menuType";
+import { useTaskContext } from "@/taskContext";
 
 type ContextMenuContextValue = {
     menu: MenuState;
@@ -22,16 +22,23 @@ export function ContextMenuProvider({
 }: {
     children: ReactNode;
 }) {
+    const taskContext = useTaskContext();
     const [menu, setMenu] = useState<MenuState>(null);
+
+    const openContextMenu = (menu: MenuState) => {
+        if (taskContext.draggedTaskRef.current) return;
+
+        setMenu(menu);
+    };
 
     return (
         <ContextMenuContext.Provider
             value={{
                 menu,
-                openContextMenu: setMenu,
+                openContextMenu,
                 closeContextMenu: () => setMenu(null),
             }}
-            >
+        >
             {children}
         </ContextMenuContext.Provider>
     );

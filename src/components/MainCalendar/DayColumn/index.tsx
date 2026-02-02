@@ -19,7 +19,6 @@ import TaskBlock from "@/components/tasks/TaskBlock";
 import { TASK_MIN_DURATION_SECONDS } from "@/constants/taskLimits";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
-import { ContextMenuRenderer } from "@/components/_layout/ContextMenu/ContextMenuRenderer";
 
 interface DayColumnProps {
     dateString: string;
@@ -248,8 +247,6 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                     </div>
                 </div>
             </SimpleBar>
-
-            <ContextMenuRenderer/>
         </div>
     );
 }

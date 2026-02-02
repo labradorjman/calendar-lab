@@ -154,11 +154,24 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
         ? startUnix! + task.duration
         : null;
 
+    /*  -----------------
+    *   DayColumn variant
+    */
     if (variant === "default") {
         return (
             <div 
                 className={styles.task_wrapper}
                 style={style}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    openContextMenu({
+                        x: e.clientX,
+                        y: e.clientY,
+                        items: menuItems,
+                    });
+                }}
             >
                 <div 
                     ref={taskRef}
@@ -178,15 +191,15 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
         )
     }
 
-    // Backlogged variant
+    /*  ------------------
+    *   Backlogged variant
+    */
     return (
         <div 
             ref={taskRef}
             className={styles.task_backlogged}
             style={style}
-            onClick={() => {console.log("Clicked on task block")}}
             onContextMenu={(e) => {
-                console.log("onContextMenu task block");
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -196,7 +209,7 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
                     items: menuItems,
                 });
             }}
-            // {...props}
+            {...props}
         >
             <span className={styles.name}>{task.name}</span>
             <span className={styles.description}>{task.description}</span>

@@ -12,6 +12,7 @@ import Backlog from "@/components/Backlog";
 import ScrollSyncContextProvider from "@/scrollSync/ScrollSyncContext";
 import TaskConextProvider from "@/taskContext";
 import { ContextMenuProvider } from "@/components/_layout/ContextMenu/ContextMenuContext";
+import { ContextMenuRenderer } from "@/components/_layout/ContextMenu/ContextMenuRenderer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,12 +42,12 @@ export default function RootLayout({
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
-                <ContextMenuProvider>
-                    <CalendarContextProvider
-                        initialSelectedDate={todayDate}
-                        initialDateRange={getNextDates(todayDate, 5)}
-                    >
-                        <TaskConextProvider>
+                <CalendarContextProvider
+                    initialSelectedDate={todayDate}
+                    initialDateRange={getNextDates(todayDate, 5)}
+                >
+                    <TaskConextProvider>
+                        <ContextMenuProvider>
                             <div className={styles.layout}>
                                 <div className={styles.side_panel}>
                                     <MiniCalendar />
@@ -56,9 +57,10 @@ export default function RootLayout({
                                     <div className={styles.main_content}>{children}</div>      
                                 </ScrollSyncContextProvider>
                             </div>
-                        </TaskConextProvider>
-                    </CalendarContextProvider>
-                </ContextMenuProvider>
+                            <ContextMenuRenderer/>
+                        </ContextMenuProvider>
+                    </TaskConextProvider>
+                </CalendarContextProvider>
             </body>
         </html>
     );

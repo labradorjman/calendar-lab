@@ -36,8 +36,11 @@ export class HourTime {
         return `${this.Hour12}:${this.minute.toString().padStart(2, "0")} ${this.suffix}`;
     }
 
-    get SecondsSinceMidnight(): number {
-        return this.hour24 * 3600 + this.minute * 60;
+    toSecondsSince(referenceHour24 = 0): number {
+        const deltaHours =
+            (this.hour24 - referenceHour24 + 24) % 24;
+
+        return deltaHours * 3600 + this.minute * 60;
     }
 
     static fromUnix(unixSeconds: number): HourTime {

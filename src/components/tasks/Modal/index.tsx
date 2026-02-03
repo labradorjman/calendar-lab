@@ -1,11 +1,12 @@
 import Input from "@/ui/Input";
 import styles from "./TaskModal.module.scss";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@/ui/Button";
-import type { Task } from "@/models/task";
+import { createDefaultTask, type Task } from "@/models/task";
 import Checkbox from "@/ui/Checkbox";
 import { createTask } from "@/storage/taskStore";
+import { useCalendarContext } from "@/context";
 
 interface ModalProps {
     open: boolean;
@@ -14,25 +15,12 @@ interface ModalProps {
 }
 
 export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) {
-    const defaultTask: Omit<Task, "id"> = {
-        userId: 1,
-        workSessionId: null,
-        name: "",
-        description: null,
-        tag1Id: null,
-        tag2Id: null,
-        orderIndex: 1,
-        startsAt: null,
-        duration: 0,
-        isImportant: false,
-        isBacklogged: false,
-        isCompleted: false,
-        softDeadline: null,
-        completedAt: null,
-        createdAt: new Date().toISOString(),
-    };
+    const calendarContext = useCalendarContext();
 
-    const [task, setTask] = useState<Omit<Task, "id">>(defaultTask);
+    const [task, setTask] = useState<Omit<Task, "id">>(createDefaultTask());
+    const [durationMinutes, setDurationMinutes] = useState<number>(0);
+
+    const pointerDownTargetRef = useRef<EventTarget | null>(null);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTask(prev => ({
@@ -49,9 +37,14 @@ export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) 
     };
 
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let val = parseInt(e.target.value);
+        if (isNaN(val)) return;
+
+        setDurationMinutes(val);
+
         setTask(prev => ({
             ...prev,
-            duration: parseInt(e.target.value)
+            duration: val * 60,
         }));
     };
 
@@ -64,6 +57,20 @@ export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) 
 
     useEffect(() => {
         if (!open) return;
+
+        if (calendarContext.modalTask) {
+            setTask(prev => ({
+                ...prev,
+                ...calendarContext.modalTask,
+            }));
+
+            setDurationMinutes(() => {
+                const durationSeconds = calendarContext.modalTask?.duration;
+                if (!durationSeconds || durationSeconds === 0) return 0;
+
+                return Math.floor(durationSeconds / 60);
+            });
+        }
 
         const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = "hidden";
@@ -84,12 +91,25 @@ export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) 
         const createdTask = createTask(taskToCreate);
         createdTask.then(task => {
             onTaskCreated(task);
+            setTask(createDefaultTask());
         });
         onClose();
     }
 
+    const onPointerDown = (e: React.PointerEvent) => {
+        pointerDownTargetRef.current = e.target;
+    };
+
+
     return (
-        <div className={styles.backdrop} onClick={onClose}>
+        <div
+            className={styles.backdrop}
+            onPointerDown={onPointerDown}
+            onClick={e => {
+                if (pointerDownTargetRef.current !== e.currentTarget) return;
+                onClose();
+            }}
+        >
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
                 <div className={styles.content}>
                     <Input
@@ -107,9 +127,8 @@ export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) 
                     <Input
                         className={styles.duration_input}
                         placeholder="Duration"
-                        value={task.duration ?? 0}
+                        value={durationMinutes}
                         onChange={handleDurationChange}
-                        type="number"
                     />
                     <Checkbox
                         className={styles.important_check}

@@ -6,6 +6,7 @@ import React, {
     useContext,
     useState
 } from "react";
+import { Task } from "@/models/task";
 
 interface CalendarContextProps {
     selectedDate: string;
@@ -13,6 +14,11 @@ interface CalendarContextProps {
 
     dateRange: string[];
     setDateRange: Dispatch<SetStateAction<string[]>>;
+
+    isTaskModalOpen: boolean;
+    modalTask: Partial<Task> | null;
+    openTaskModal: (task?: Partial<Task>) => void;
+    closeTaskModal: () => void;
 }
 
 interface CalendarContextProviderProps {
@@ -44,12 +50,27 @@ export default function CalendarContextProvider({
     const [selectedDate, setSelectedDate] = useState<string>(initialSelectedDate);
     const [dateRange, setDateRange] = useState<string[]>(initialDateRange);
 
+    const [modalTask, setModalTask] =
+        useState<Partial<Task> | null>(null);
+
+    const openTaskModal = (task?: Partial<Task>) => {
+        setModalTask(task ?? {});
+    };
+
+    const closeTaskModal = () => {
+        setModalTask(null);
+    };
+
     return (
         <CalendarContext.Provider value={{
             selectedDate,
             setSelectedDate,
             dateRange,
             setDateRange,
+            modalTask,
+            isTaskModalOpen: modalTask !== null,
+            openTaskModal,
+            closeTaskModal,
         }}>
             {children}
         </CalendarContext.Provider>

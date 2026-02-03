@@ -16,3 +16,23 @@ export interface Task {
     completedAt: string | null,
     createdAt: string,
 }
+
+export function createDefaultTask(): Omit<Task, "id">{
+    return {
+        userId: 1,
+        workSessionId: null,
+        name: "",
+        description: null,
+        tag1Id: null,
+        tag2Id: null,
+        orderIndex: 1,
+        startsAt: null,
+        duration: 0,
+        isImportant: false,
+        isBacklogged: false,
+        isCompleted: false,
+        softDeadline: null,
+        completedAt: null,
+        createdAt: new Date().toISOString(),
+    };
+}

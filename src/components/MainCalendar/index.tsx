@@ -6,13 +6,18 @@ import { useCalendarContext } from "@/context";
 import DayColumn from "./DayColumn";
 import { useEffect, useRef } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
-import TimeColumn from "./DayColumn/TimeColumn";
+import TimeColumn from "./TimeColumn";
+import TaskModal from "@/components/tasks/Modal";
+import useCalendarStore from "@/store";
+import { Task } from "@/models/task";
 
 const TIME_COLUMN_NAME = "time_column";
 
 export default function MainCalendar() {
     const calendarContext = useCalendarContext();
     const scrollSyncContext = useScrollSyncContext();
+
+    const [_, updateTasks] = useCalendarStore("tasks");
 
     const isInitialMount = useRef<boolean>(true);
     const prevDateRange = useRef<string[]>([]);
@@ -47,23 +52,32 @@ export default function MainCalendar() {
     }, [calendarContext.dateRange]);
     
     return (
-        <div className={styles.content}>
-            <div className={styles.time_column}>
-                <TimeColumn
-                    isHidden={false}
-                    startHour={0}
-                    endHour={23}
-                />
-            </div>
-            <div className={styles.right_columns}>
-                {calendarContext.dateRange.map((dateString, index) => (
-                    <DayColumn
-                        key={dateString}
-                        dateString={dateString}
-                        isRightmost={index === calendarContext.dateRange.length - 1}
+        <>
+            <div className={styles.content}>
+                <div className={styles.time_column}>
+                    <TimeColumn
+                        isHidden={false}
+                        startHour={0}
+                        endHour={23}
                     />
-                ))}
+                </div>
+                <div className={styles.right_columns}>
+                    {calendarContext.dateRange.map((dateString, index) => (
+                        <DayColumn
+                            key={dateString}
+                            dateString={dateString}
+                            isRightmost={index === calendarContext.dateRange.length - 1}
+                        />
+                    ))}
+                </div>
             </div>
-        </div>
+            <TaskModal
+                open={calendarContext.isTaskModalOpen}
+                onClose={() => calendarContext.closeTaskModal()}
+                onTaskCreated={(newTask: Task) => {
+                    updateTasks(prev => [...prev, newTask]);
+                }}
+            />
+        </>
     );
 }

@@ -2,8 +2,7 @@
 
 import styles from "@/components/Backlog/Backlog.module.scss";
 import Button from "@/ui/Button";
-import { useEffect, useState } from "react";
-import TaskModal from "@/components/tasks/Modal";
+import { useEffect } from "react";
 import { Task } from "@/models/task";
 import TaskBlock from "@/components/tasks/TaskBlock";
 import SimpleBar from "simplebar-react";
@@ -12,6 +11,7 @@ import { updateTask } from "@/services/tasks";
 import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
+import { useCalendarContext } from "@/context";
 
 export default function Backlog() {
     const { openContextMenu } = useContextMenu();
@@ -19,14 +19,14 @@ export default function Backlog() {
         {
             id: "add-task",
             label: "Add Task",
-            onSelect: () => {setIsModalOpen(true)},
+            onSelect: () => {calendarContext.openTaskModal()},
         },
     ];
 
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
 
-    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const calendarContext = useCalendarContext();
 
     useEffect(() => {
         async function fetchTasks() {
@@ -84,7 +84,7 @@ export default function Backlog() {
                     element="button"
                     size="sm"
                     onClick={() => {
-                        setIsModalOpen(true);
+                        calendarContext.openTaskModal();
                     }}
                 >
                     +
@@ -117,13 +117,6 @@ export default function Backlog() {
                     ))}
                 </SimpleBar>
             </div>
-            <TaskModal
-                open={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onTaskCreated={(newTask: Task) => {
-                    updateTasks(prev => [...prev, newTask]);
-                }}
-            />
         </div>
     );
 }

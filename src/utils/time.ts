@@ -1,46 +1,4 @@
-// import { HOUR_HEIGHT } from "@/constants/column";
-
 import { HOUR_HEIGHT } from "@/constants/column";
-
-// function getHourParts(hour: number) {
-//     const isPM = Math.floor(hour / 12) % 2 === 1;
-//     const hourValue = hour % 12 === 0 ? 12 : hour % 12;
-
-//     return {
-//         hourValue,
-//         suffix: isPM ? "PM" : "AM",
-//     };
-// }
-
-// export function getHourString(hour: number, includeSuffix?: boolean): string {
-//     const { hourValue, suffix } = getHourParts(hour);
-//     return includeSuffix ? `${hourValue} ${suffix}` : hourValue.toString();
-// }
-
-// /**
-//  * Convert a 24-hour time string "HH:MM" to 12-hour format with optional suffix
-//  * @param time24 - string in "HH:MM" format
-//  * @param includeSuffix - whether to include "AM"/"PM" (default true)
-//  * @returns string like "12:15 AM" or "12:15"
-//  */
-// export function to12HourTimeFromString(
-//     time24: string,
-//     includeSuffix = true
-// ): string {
-//     const [hourStr, minuteStr] = time24.split(":");
-//     const hour24 = parseInt(hourStr, 10);
-//     const minute = parseInt(minuteStr, 10);
-
-//     if (isNaN(hour24) || isNaN(minute) || hour24 < 0 || hour24 > 23 || minute < 0 || minute > 59) {
-//         throw new Error(`Invalid 24-hour time string: ${time24}`);
-//     }
-
-//     const suffix = hour24 >= 12 ? "PM" : "AM";
-//     const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-//     const minutePadded = minute.toString().padStart(2, "0");
-
-//     return includeSuffix ? `${hour12}:${minutePadded} ${suffix}` : `${hour12}:${minutePadded}`;
-// }
 
 /**
  * Convert Unix seconds to Postgres timestamptz string
@@ -106,14 +64,14 @@ export function postgresTimestamptzToUnix(timestamptz: string): number {
     return Math.floor(date.getTime() / 1000);
 }
 
-export function get24HourMinute(
-    dividend: number,
+export function get24HourMinuteFromOffset(
+    offset: number,
     minuteInterval: number,
 ) {
     const snapDist = HOUR_HEIGHT / (60 / minuteInterval);
 
-    const hour24 = Math.floor(dividend / HOUR_HEIGHT);
-    const remainder = dividend % HOUR_HEIGHT;
+    const hour24 = Math.floor(offset / HOUR_HEIGHT);
+    const remainder = offset % HOUR_HEIGHT;
     const minute = minuteInterval * Math.floor(remainder / snapDist);
 
     return {
@@ -121,21 +79,3 @@ export function get24HourMinute(
         minute,
     };
 }
-
-/**
- * Convert a Postgres timestamptz string to Unix seconds
- * @param seconds - Number of seconds since the start of the day column
- * @returns top offset required by task conatiner
- */
-
-// export function unixToHourString(unixSeconds: number, includeSuffix = true): string {
-//     const date = new Date(unixSeconds * 1000);
-
-//     let hours = date.getHours();
-//     const suffix = hours >= 12 ? "PM" : "AM";
-
-//     hours = hours % 12;
-//     if (hours === 0) hours = 12;
-
-//     return includeSuffix ? `${hours} ${suffix}` : hours.toString();
-// }

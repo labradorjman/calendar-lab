@@ -1,7 +1,7 @@
 "use client";
 
-import styles from "@/components/MainCalendar/DayColumn/TimeColumn/TimeColumn.module.scss";
-import HourRow from "@/components/MainCalendar/DayColumn/HourRow";
+import styles from "@/components/MainCalendar/TimeColumn/TimeColumn.module.scss";
+import HourRow from "@/components/MainCalendar/HourRow";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import type SimpleBarCore from "simplebar-core";
 import { useEffect, useRef, useState } from "react";
@@ -9,7 +9,7 @@ import SimpleBar from "simplebar-react";
 import { useTaskContext } from "@/taskContext";
 import { isValidYMD } from "@/utils/dateString";
 import { HEADER_HEIGHT, SNAP_MINUTES } from "@/constants/column";
-import { get24HourMinute } from "@/utils/time";
+import { get24HourMinuteFromOffset } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
 
 interface TimeColumnProps {
@@ -98,7 +98,7 @@ export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnP
             const scrollTop = simpleBarRef.current?.getScrollElement()?.scrollTop ?? 0;
             // console.log("SCROLL TOP:", scrollTop);
 
-            const { hour24, minute } = get24HourMinute(state.columnContentTop ?? 0, SNAP_MINUTES);
+            const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
             const hourTime = new HourTime(hour24, minute)
 
             setTimeString(prev => {

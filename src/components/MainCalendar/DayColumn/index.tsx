@@ -5,13 +5,13 @@ import styles from "@/components/MainCalendar/DayColumn/DayColumn.module.scss";
 import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
 import { TIMEZONE, WEEK_DAYS } from "@/constants/calendar";
-import { HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
+import { HEADER_HEIGHT, HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
 import { getYearMonthDay } from "@/utils/dateString";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { HoveredColumnState, useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/tasks";
-import { get24HourMinute, postgresTimestamptzToUnix } from "@/utils/time";
+import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, unixToPostgresTimestamptz } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
 import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
@@ -19,11 +19,17 @@ import TaskBlock from "@/components/tasks/TaskBlock";
 import { TASK_MIN_DURATION_SECONDS } from "@/constants/taskLimits";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
+import { useCalendarContext } from "@/context";
 
 interface DayColumnProps {
     dateString: string;
     isRightmost: boolean;
 }
+
+type TaskInterval = {
+    start: number;
+    end: number;
+};
 
 export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     const { openContextMenu } = useContextMenu();
@@ -31,7 +37,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         {
             id: "add-task",
             label: "Add Task",
-            onSelect: () => {},
+            onSelect: () => {calendarContext.openTaskModal({ startsAt: unixToPostgresTimestamptz(taskStartSeconds.current)})},
         },
         {
             id: "create-work-session",
@@ -48,10 +54,12 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
 
+    const calendarContext = useCalendarContext();
+    const taskStartSeconds = useRef<number>(0);
+
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerHeight, setHeaderHeight] = useState<number>(0);
 
-    // const [hovered, setHovered] = useState(false);
     const hoveredRef = useRef(false);
     const [contentHeight, setContentHeight] = useState<number>(0);
     const [taskContainerHeight, setTaskContainerHeight] = useState<number>(0);
@@ -114,6 +122,9 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         if (state.columnId !== dateString) return;
 
         if (taskContext.draggedTaskRef.current) {
+            const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
+            const hourTime = new HourTime(hour24, minute);
+
             const duration = taskContext.draggedTaskRef.current.duration;
             if (duration !== 0 && duration < TASK_MIN_DURATION_SECONDS) {
                 console.log("--- Task must be 15 minutes long");
@@ -123,8 +134,27 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                 // Cancelling will send it to backlog
             }
 
-            const { hour24, minute } = get24HourMinute(state.columnContentTop ?? 0, SNAP_MINUTES);
-            const hourTime = new HourTime(hour24, minute)
+            if (duration > 0) {
+                const taskId = taskContext.draggedTaskRef.current.id;
+                const taskStartUnix = calendarDate.startSeconds + hourTime.toSecondsSince();
+                const taskEndUnix = taskStartUnix + duration;
+
+                const hasOverlap = Object.entries(
+                    intervalsByIdRef.current
+                ).some(([id, interval]) => {
+                    if (id === taskId.toString()) return false;
+
+                     return (
+                        taskStartUnix < interval.end &&
+                        taskEndUnix > interval.start
+                    );
+                });
+
+                if (hasOverlap) {
+                    // Display toast for overlap
+                    return;
+                }
+            }
 
             const taskId = taskContext.draggedTaskRef.current!.id;
             const [task, error] = await handlePromise(
@@ -133,7 +163,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                     {
                         startsAt: calendarDate
                             .builder()
-                            .addSeconds(hourTime.SecondsSinceMidnight)
+                            .addSeconds(hourTime.toSecondsSince())
                             .toISOString(),
                         isBacklogged: false,
                     }
@@ -152,24 +182,36 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         }
     }
 
-    const tasksWithUnix = tasks.map(task => {
-        const startsAtUnix = task.startsAt
-            ? postgresTimestamptzToUnix(task.startsAt)
-            : undefined;
-
-        return {
+    const tasksWithUnix = useMemo(() => {
+        return tasks.map(task => ({
             ...task,
-            startsAtUnix,
-        };
-    });
+            startsAtUnix: task.startsAt
+                ? postgresTimestamptzToUnix(task.startsAt)
+                : undefined
+        }));
+    }, [tasks]);
 
-    const visibleTasks = tasksWithUnix.filter(
-        task =>
-            !task.isBacklogged &&
-            task.startsAtUnix !== undefined &&
-            task.startsAtUnix >= calendarDate.startSeconds &&
-            task.startsAtUnix < calendarDate.endSeconds
+    const visibleTasks = useMemo(() => {
+        return tasksWithUnix.filter(
+            task =>
+                !task.isBacklogged &&
+                task.startsAtUnix !== undefined &&
+                task.startsAtUnix >= calendarDate.startSeconds &&
+                task.startsAtUnix < calendarDate.endSeconds
+        );
+    }, [tasksWithUnix, calendarDate]);
+
+    const intervalsByIdRef = useRef<Record<string, TaskInterval>>({});
+    intervalsByIdRef.current = Object.fromEntries(
+        visibleTasks.map(task => [
+            task.id,
+            {
+                start: task.startsAtUnix!,
+                end: task.startsAtUnix! + task.duration
+            }
+        ])
     );
+
 
     function secondsToOffset(seconds: number): number {
         const minutes = seconds / 60;
@@ -185,11 +227,17 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         );
     }, []);
 
+
     return (
         <div
             className={styles.column}
             onContextMenu={(e) => {
-                console.log("onContextMenu daycolumn");
+                const { hour24, minute } = get24HourMinuteFromOffset(getScrollTop() + e.clientY - HEADER_HEIGHT, SNAP_MINUTES);
+                const hourTime = new HourTime(hour24, minute);
+
+                taskStartSeconds.current = calendarDate.startSeconds + hourTime.toSecondsSince();
+                console.log("onContextMenu daycolumn", taskStartSeconds.current);
+
                 e.preventDefault();
                 e.stopPropagation();
 

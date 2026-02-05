@@ -1,0 +1,26 @@
+.backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 1000;
+
+    pointer-events: auto;
+
+    .modal {
+        background: #1e1e1e;
+        color: #fff;
+        border-radius: 12px;
+        padding: var(--gap);
+        min-width: 600px;
+        max-width: 90vw;
+        max-height: 90vh;
+        overflow: auto;
+
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+}

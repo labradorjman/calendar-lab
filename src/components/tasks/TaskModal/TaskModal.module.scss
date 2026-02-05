@@ -1,0 +1,48 @@
+.task_modal {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+
+    .content {
+        display: grid;
+        grid-template-columns: 100px 100px 1fr 1fr 1fr;
+        grid-template-rows: 1fr 1fr 1fr;
+        grid-template-areas:
+            "name name name . ."
+            "desc desc desc desc desc"
+            "duration . important . .";
+
+        gap: var(--gap);
+
+        .input_area {
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap_xsmall);
+            
+            .label {
+                font-size: var(--font_medium);
+            }
+        }
+
+        .name_input {
+            grid-area: name;
+        }
+        .description_input {
+            grid-area: desc;
+        }
+        .duration_input {
+            grid-area: duration;
+        }
+        .important_check {
+            grid-area: important;
+            align-self: self-end;
+        }
+    }
+
+    .bottom {
+        height: 40px;
+
+        display: flex;
+        justify-content: flex-end;
+    }
+}

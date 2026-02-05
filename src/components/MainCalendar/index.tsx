@@ -7,7 +7,7 @@ import DayColumn from "./DayColumn";
 import { useEffect, useRef } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import TimeColumn from "./TimeColumn";
-import TaskModal from "@/components/tasks/Modal";
+import TaskModal from "@/components/tasks/TaskModal";
 import useCalendarStore from "@/store";
 import { Task } from "@/models/task";
 

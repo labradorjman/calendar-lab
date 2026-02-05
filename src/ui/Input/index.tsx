@@ -4,6 +4,7 @@ import styles from "./Input.module.scss";
 interface IInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     tooltip?: boolean;
     error?: string;
+    suffix?: string;
 }
 
 function DebouncedInput({
@@ -54,9 +55,19 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, fwdRef) => {
                 {/* {props.icon && (
                 <Nucleo className={styles.icon} size="sm" icon={props.icon} />
                 )} */}
-                <input {...{ ...props, className: styles.Input, ref: fwdRef }} />
-                {props.error?.length! > 0 && (
-                <small className={styles.error}>{props.error}</small>
+                <div className={styles.input_row}>
+                    <input
+                        {...props}
+                        ref={fwdRef}
+                        className={styles.input}
+                    />
+                    {props.suffix && (
+                        <span className={styles.suffix}>{props.suffix}</span>
+                    )}
+                </div>
+
+                {props.error && (
+                    <small className={styles.error}>{props.error}</small>
                 )}
             </div>
         </>

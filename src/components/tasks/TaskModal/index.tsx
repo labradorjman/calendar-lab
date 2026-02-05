@@ -1,26 +1,23 @@
 import Input from "@/ui/Input";
 import styles from "./TaskModal.module.scss";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "@/ui/Button";
 import { createDefaultTask, type Task } from "@/models/task";
 import Checkbox from "@/ui/Checkbox";
 import { useCalendarContext } from "@/context";
 import { createTask } from "@/services/tasks";
+import Modal, { ModalProps } from "@/components/Modal";
 
-interface ModalProps {
-    open: boolean;
-    onClose: () => void;
+interface TaskModalProps extends Omit<ModalProps, "children"> {
     onTaskCreated: (task: Task) => void;
 }
 
-export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) {
+export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalProps) {
     const calendarContext = useCalendarContext();
 
     const [task, setTask] = useState<Omit<Task, "id">>(createDefaultTask());
     const [durationMinutes, setDurationMinutes] = useState<number>(0);
-
-    const pointerDownTargetRef = useRef<EventTarget | null>(null);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTask(prev => ({
@@ -37,6 +34,11 @@ export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) 
     };
 
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.value === "") {
+            setDurationMinutes(0);
+            return;
+        }
+        
         let val = parseInt(e.target.value);
         if (isNaN(val)) return;
 
@@ -71,16 +73,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) 
                 return Math.floor(durationSeconds / 60);
             });
         }
-
-        const originalOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-
-        return () => {
-            document.body.style.overflow = originalOverflow;
-        };
     }, [open]);
-
-    if (!open) return null;
 
     function handleCreate() {
         const taskToCreate: Omit<Task, "id"> = {
@@ -95,41 +88,38 @@ export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) 
         });
         onClose();
     }
-
-    const onPointerDown = (e: React.PointerEvent) => {
-        pointerDownTargetRef.current = e.target;
-    };
-
-
     return (
-        <div
-            className={styles.backdrop}
-            onPointerDown={onPointerDown}
-            onClick={e => {
-                if (pointerDownTargetRef.current !== e.currentTarget) return;
-                onClose();
-            }}
+        <Modal
+            open={open}
+            onClose={onClose}
         >
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.task_modal}>
                 <div className={styles.content}>
-                    <Input
-                        className={styles.name_input}
-                        placeholder="Name"
-                        value={task.name}
-                        onChange={handleNameChange}
-                    />
-                    <Input
-                        className={styles.description_input}
-                        placeholder="Description"
-                        value={task.description ?? ""}
-                        onChange={handleDescriptionChange}
-                    />
-                    <Input
-                        className={styles.duration_input}
-                        placeholder="Duration"
-                        value={durationMinutes}
-                        onChange={handleDurationChange}
-                    />
+                    <div className={`${styles.input_area} ${styles.name_input}`}>
+                        <span className={styles.label}>Name</span>
+                        <Input
+                            placeholder=""
+                            value={task.name}
+                            onChange={handleNameChange}
+                        />
+                    </div>
+                    <div className={`${styles.input_area} ${styles.description_input}`}>
+                        <span className={styles.label}>Description</span>
+                        <Input
+                            placeholder=""
+                            value={task.description ?? ""}
+                            onChange={handleDescriptionChange}
+                        />
+                    </div>
+                    <div className={`${styles.input_area} ${styles.duration_input}`}>
+                        <span className={styles.label}>Duration</span>
+                        <Input
+                            placeholder=""
+                            value={durationMinutes}
+                            onChange={handleDurationChange}
+                            suffix="mins"
+                        />
+                    </div>
                     <Checkbox
                         className={styles.important_check}
                         label="Important"
@@ -148,6 +138,6 @@ export default function TaskModal({ open, onClose, onTaskCreated }: ModalProps) 
                     </Button>
                 </div>
             </div>
-        </div>
+        </Modal>
     );
 }

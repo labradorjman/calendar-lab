@@ -1,0 +1,15 @@
+.session {
+    width: 100%;
+    height: 100%;
+    background-color: #1390a0;
+    border-radius: var(--gap_xsmall);
+
+    padding: var(--gap_xsmall);
+    box-sizing: border-box;
+    cursor: default;
+    user-select: none;
+    overflow: hidden;
+    
+    display: flex;
+    flex-direction: column;
+}

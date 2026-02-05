@@ -4,7 +4,7 @@ import styles from "@/components/MainCalendar/DayColumn/DayColumn.module.scss";
 
 import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
-import { TIMEZONE, WEEK_DAYS } from "@/constants/calendar";
+import { TIMEZONE, USER_ID, WEEK_DAYS } from "@/constants/calendar";
 import { HEADER_HEIGHT, HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
 import { getYearMonthDay } from "@/utils/dateString";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -20,6 +20,8 @@ import { TASK_MIN_DURATION_SECONDS } from "@/constants/taskLimits";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
+import { createWorkSession } from "@/services/workSessions";
+import WorkSessionBlock from "../WorkSession";
 
 interface DayColumnProps {
     dateString: string;
@@ -42,9 +44,21 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         {
             id: "create-work-session",
             label: "Create Work Session",
-            onSelect: () => {},
+            onSelect: () => {
+                console.log("Creating work session");
+                // createWorkSession({
+                //     userId: USER_ID,
+                //     name: "activities",
+                //     color: "#fff",
+                //     isExtended: false,
+                //     isCompleted: false,
+                //     completedAt: null,
+                // });
+            },
         },
     ];
+
+    const [workSessions, updateWorkSessions] = useCalendarStore("work_sessions");
 
     const { year, month, day } = getYearMonthDay(dateString);
     const date = new Date(year, month - 1, day);
@@ -126,7 +140,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
             const hourTime = new HourTime(hour24, minute);
 
             const duration = taskContext.draggedTaskRef.current.duration;
-            if (duration !== 0 && duration < TASK_MIN_DURATION_SECONDS) {
+            if (duration === 0 || duration < TASK_MIN_DURATION_SECONDS) {
                 console.log("--- Task must be 15 minutes long");
                 return;
 
@@ -212,7 +226,6 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         ])
     );
 
-
     function secondsToOffset(seconds: number): number {
         const minutes = seconds / 60;
         const spacePerMinute = HOUR_HEIGHT / 60;
@@ -226,7 +239,6 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                 ?.scrollTop ?? 0
         );
     }, []);
-
 
     return (
         <div
@@ -292,6 +304,14 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                                 />
                             );
                         })}
+                        {/* {workSessions.map(session => {
+                            return (
+                                <WorkSessionBlock
+                                    key={`ws-${session.id}`}
+                                    workSession={session}
+                                />
+                            );
+                        })} */}
                     </div>
                 </div>
             </SimpleBar>

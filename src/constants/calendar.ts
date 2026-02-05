@@ -1,4 +1,5 @@
 export const TIMEZONE = "Australia/Sydney";
+export const USER_ID = 1;
 
 export const MONTH_NAMES = [
   "January",

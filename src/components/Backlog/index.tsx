@@ -12,6 +12,7 @@ import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
+import { WorkSession } from "@/models/workSession";
 
 export default function Backlog() {
     const { openContextMenu } = useContextMenu();
@@ -25,6 +26,7 @@ export default function Backlog() {
 
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
+    const [_, updateWorkSessions] = useCalendarStore("work_sessions");
 
     const calendarContext = useCalendarContext();
 
@@ -36,7 +38,15 @@ export default function Backlog() {
             updateTasks(() => data);
         }
 
+        async function fetchWorkSessions() {
+            const res = await fetch("/api/work-sessions");
+            const data: WorkSession[] = await res.json();
+
+            updateWorkSessions(() => data);
+        }
+
         fetchTasks();
+        fetchWorkSessions();
     }, []);
     
     useEffect(() => {

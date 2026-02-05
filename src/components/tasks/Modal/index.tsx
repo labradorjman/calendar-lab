@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import Button from "@/ui/Button";
 import { createDefaultTask, type Task } from "@/models/task";
 import Checkbox from "@/ui/Checkbox";
-import { createTask } from "@/storage/taskStore";
 import { useCalendarContext } from "@/context";
+import { createTask } from "@/services/tasks";
 
 interface ModalProps {
     open: boolean;

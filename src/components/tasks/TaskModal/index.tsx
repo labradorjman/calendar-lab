@@ -38,7 +38,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
             setDurationMinutes(0);
             return;
         }
-        
+
         let val = parseInt(e.target.value);
         if (isNaN(val)) return;
 

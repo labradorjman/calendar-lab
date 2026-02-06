@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "@/components/MiniCalendar/Cell/Cell.module.scss";
+import styles from "./CalendarCell.module.scss";
 
 interface CellProps {
     day: number,
@@ -8,10 +8,10 @@ interface CellProps {
     isSelected: boolean,
     isToday: boolean,
     isCurrentMonth: boolean,
-    onDateSelect: (dateString: string) => void;
+    onDateSelect: (date: string) => void;
 }
 
-export default function Cell({ day, dateString, isSelected, isToday, isCurrentMonth, onDateSelect }: CellProps) {
+export default function CalendarCell({ day, dateString, isSelected, isToday, isCurrentMonth, onDateSelect }: CellProps) {
         const className = [
             styles.cell,
             isSelected && styles.selected,

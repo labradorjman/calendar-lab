@@ -23,7 +23,7 @@ $day-selected: #5f5f5f;
 
     span {
         position: relative;
-        font-size: 0.9em;
+        font-size: var(--font-size);
         z-index: 1;
     }
 }

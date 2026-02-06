@@ -1,7 +1,7 @@
 "use client";
 
-import styles from "@/components/MainCalendar/TimeColumn/TimeColumn.module.scss";
-import HourRow from "@/components/MainCalendar/HourRow";
+import styles from "@/components/content/TimeColumn/TimeColumn.module.scss";
+import HourRow from "@/components/content/HourRow";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import type SimpleBarCore from "simplebar-core";
 import { useEffect, useRef, useState } from "react";

@@ -1,0 +1,82 @@
+$grid-gap: 0.5rem;
+
+.calendar_grid {
+    &[data-size="sm"] {
+        --cell-size: 24px;
+        --font-size: var(--font_xsmall);
+    }
+
+    &[data-size="md"] {
+        --cell-size: 27px;
+        --font-size: var(--font_small);
+    }
+
+    &[data-size="lg"] {
+        --cell-size: 30px;
+        --font-size: var(--font_medium);
+    }
+
+    --grid-end: calc(var(--cell-size) + $grid-gap / 2);
+    --grid-center: calc(var(--cell-size) + $grid-gap);
+
+    background-color: #11101e;
+    padding: var(--gap_small) 0;
+
+    display: grid;
+
+    grid-template-columns:
+        var(--grid-end)
+        var(--grid-center)
+        var(--grid-center)
+        var(--grid-center)
+        var(--grid-center)
+        var(--grid-center)
+        var(--grid-end);
+
+    grid-template-rows:
+        auto
+        var(--grid-end)
+        var(--grid-center)
+        var(--grid-center)
+        var(--grid-center)
+        var(--grid-center)
+        var(--grid-end);
+
+    grid-template-areas:
+        "days days days days days days days"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal"
+        "cal cal cal cal cal cal cal";
+    
+    .weekdays {
+        grid-area: days;
+
+        display: grid;
+        gap: $grid-gap;
+        grid-template-columns: repeat(7, var(--cell-size));
+
+        padding-bottom: var(--gap_small);
+
+        .name {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: var(--font-size);
+            font-weight: bold;
+            color: #dfdfdff6;
+        }
+    }
+
+    .grid {
+        grid-area: cal;
+
+        display: grid;
+        gap: $grid-gap;
+        grid-template-columns: repeat(7, var(--cell-size));
+        grid-template-rows: repeat(6, var(--cell-size));
+    }
+}

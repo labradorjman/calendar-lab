@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "@/components/MainCalendar/MainCalendar.module.scss";
+import styles from "@/components/content/Content.module.scss";
 
 import { useCalendarContext } from "@/context";
 import DayColumn from "./DayColumn";

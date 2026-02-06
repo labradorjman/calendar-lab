@@ -1,5 +1,5 @@
 import type { Calendar } from "tsg-calendar-lib";
-import type { MonthBlock } from "../components/MiniCalendar/types/monthBlock";
+import type { MonthBlock } from "../types/monthBlock";
 
 export function toMondayMonthBlock(calendar: Calendar): MonthBlock {
     const sundayDays = calendar.FullCalendarData.flat();

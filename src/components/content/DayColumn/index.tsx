@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "@/components/MainCalendar/DayColumn/DayColumn.module.scss";
+import styles from "@/components/content/DayColumn/DayColumn.module.scss";
 
 import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";

@@ -7,7 +7,7 @@ import styles from "./layout.module.scss";
 import CalendarContextProvider from "@/context";
 import { getDateString } from "@/utils/dateString";
 import { getNextDates } from "@/utils/days";
-import MiniCalendar from "@/components/MiniCalendar";
+import MiniCalendar from "@/components/AppCalendar";
 import Backlog from "@/components/Backlog";
 import ScrollSyncContextProvider from "@/scrollSync/ScrollSyncContext";
 import TaskConextProvider from "@/taskContext";

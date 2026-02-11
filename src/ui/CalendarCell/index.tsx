@@ -4,14 +4,14 @@ import styles from "./CalendarCell.module.scss";
 
 interface CellProps {
     day: number,
-    dateString: string,
+    date: Date,         // yyyy-MM-dd
     isSelected: boolean,
     isToday: boolean,
     isCurrentMonth: boolean,
-    onDateSelect: (date: string) => void;
+    onDateSelect: (date: Date) => void;
 }
 
-export default function CalendarCell({ day, dateString, isSelected, isToday, isCurrentMonth, onDateSelect }: CellProps) {
+export default function CalendarCell({ day, date, isSelected, isToday, isCurrentMonth, onDateSelect }: CellProps) {
         const className = [
             styles.cell,
             isSelected && styles.selected,
@@ -24,7 +24,7 @@ export default function CalendarCell({ day, dateString, isSelected, isToday, isC
     return (
         <div
             className={className}
-            onClick={() => onDateSelect(dateString)}
+            onClick={() => onDateSelect(date)}
         >
             <span>{day}</span>
         </div>

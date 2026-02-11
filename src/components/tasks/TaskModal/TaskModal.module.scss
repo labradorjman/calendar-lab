@@ -10,7 +10,7 @@
         grid-template-areas:
             "name name name . ."
             "desc desc desc desc desc"
-            "duration . important . .";
+            "duration . date . important";
 
         gap: var(--gap);
 
@@ -33,9 +33,12 @@
         .duration_input {
             grid-area: duration;
         }
+        .date_input {
+            grid-area: date;
+        }
         .important_check {
             grid-area: important;
-            align-self: self-end;
+            align-self: center;
         }
     }
 

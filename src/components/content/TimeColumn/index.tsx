@@ -7,7 +7,7 @@ import type SimpleBarCore from "simplebar-core";
 import { useEffect, useRef, useState } from "react";
 import SimpleBar from "simplebar-react";
 import { useTaskContext } from "@/taskContext";
-import { isValidYMD } from "@/utils/dateString";
+import { isValidYMD } from "@/utils/dateConverter";
 import { HEADER_HEIGHT, SNAP_MINUTES } from "@/constants/column";
 import { get24HourMinuteFromOffset } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
@@ -86,8 +86,8 @@ export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnP
         if (!taskContext.subscribeHoveredColumn) return;
 
         const unsubscribe = taskContext.subscribeHoveredColumn(state => {
-            const isDayColumn = isValidYMD(state.columnId ?? "");
-            setShowAlignment(isDayColumn);
+            const isDayColumn = state.columnId?.startsWith("date:");
+            setShowAlignment(!!isDayColumn);
 
             if (!isDayColumn) return;
 

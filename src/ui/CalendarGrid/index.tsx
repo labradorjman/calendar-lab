@@ -4,71 +4,90 @@ import styles from "./CalendarGrid.module.scss";
 
 import { Calendar } from "tsg-calendar-lib";
 import type { MonthBlock } from "@/types/monthBlock";
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { toMondayMonthBlock } from "@/utils/weekBuilder";
 import CalendarCell from "@/ui/CalendarCell";
-import { getDateString } from "@/utils/dateString";
 import { shiftMonth } from "@/utils/month";
 import { useCalendarContext } from "@/context";
 import { YearMonthState } from "@/types/yearMonthState";
+import { dateToKey } from "@/utils/dateConverter";
 
 interface CalendarGridProps {
-    yearMonth: YearMonthState;
+    yearMonth?: YearMonthState;
     size: "sm" | "md" | "lg";
-    onDateSelect: (date: string) => void;
+    onDateSelect: (date: Date) => void;
 }
 
-export default function CalendarGrid({ yearMonth, size, onDateSelect }: CalendarGridProps) {
-    console.log("size", size);
-    const calendarContext = useCalendarContext();
+const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
+    ({ yearMonth, size, onDateSelect }, ref) => {
+        const calendarContext = useCalendarContext();
 
-    const today = new Date();
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
 
-    const [monthBlock, setMonthBlock] = useState<MonthBlock>(() => {
-        const calendar = new Calendar(today.getFullYear(), today.getMonth() + 1);
-        return toMondayMonthBlock(calendar);
-    });
+        const [monthBlock, setMonthBlock] = useState<MonthBlock>(() => {
+            const calendar = new Calendar(today.getFullYear(), today.getMonth() + 1);
+            return toMondayMonthBlock(calendar);
+        });
 
-    useEffect(() => {
-        const calendar = new Calendar(yearMonth.year, yearMonth.month);
-        setMonthBlock(toMondayMonthBlock(calendar));
-    }, [yearMonth]);
+        useEffect(() => {
+            if (!yearMonth) return;
 
-    return (
-        <div className={styles.calendar_grid} data-size={size}>
-            <div className={styles.weekdays}>
-                <div className={styles.name}>M</div>
-                <div className={styles.name}>T</div>
-                <div className={styles.name}>W</div>
-                <div className={styles.name}>T</div>
-                <div className={styles.name}>F</div>
-                <div className={styles.name}>S</div>
-                <div className={styles.name}>S</div>
-            </div>
-            <div className={styles.grid}>
-                {monthBlock.days.map((day, index) => {
-                    const isPrevMonth = index < monthBlock.startIndex;
-                    const isNextMonth = index > monthBlock.endIndex;
-                    const delta = isPrevMonth ? -1 : isNextMonth ? 1 : 0;
+            const calendar = new Calendar(yearMonth.year, yearMonth.month);
+            setMonthBlock(toMondayMonthBlock(calendar));
+        }, [yearMonth]);
 
-                    const { year, month } = shiftMonth(yearMonth.year, yearMonth.month, delta);
+        return (
+            <div className={styles.calendar_grid} data-size={size}>
+                <div className={styles.weekdays}>
+                    <div className={styles.name}>M</div>
+                    <div className={styles.name}>T</div>
+                    <div className={styles.name}>W</div>
+                    <div className={styles.name}>T</div>
+                    <div className={styles.name}>F</div>
+                    <div className={styles.name}>S</div>
+                    <div className={styles.name}>S</div>
+                </div>
+                <div className={styles.grid}>
+                    {monthBlock.days.map((day, index) => {
+                        const isPrevMonth = index < monthBlock.startIndex;
+                        const isNextMonth = index > monthBlock.endIndex;
+                        const delta = isPrevMonth ? -1 : isNextMonth ? 1 : 0;
 
-                    const dateString = getDateString(year, month, day);
-                    const todayString = getDateString(today.getFullYear(), today.getMonth() + 1, today.getDate());
+                        const { year, month } = shiftMonth(
+                            yearMonth?.year ?? today.getFullYear(),
+                            yearMonth?.month ?? today.getMonth() + 1,
+                            delta
+                        );
 
-                    return (
+                        const cellDate = new Date(year, month - 1, day);
+                        cellDate.setUTCHours(0, 0, 0, 0);
+                        
+                        const todayDate = today;
+
+                        return (
                         <CalendarCell
-                            key={dateString}
+                            key={dateToKey(cellDate)}
                             day={day}
-                            dateString={dateString}
-                            isSelected={calendarContext.selectedDate === dateString}
-                            isToday={todayString === dateString}
-                            isCurrentMonth={month === yearMonth.month}
+                            date={cellDate}
+                            isSelected={
+                                calendarContext.selectedDate
+                                    ? calendarContext.selectedDate.getTime() === cellDate.getTime()
+                                    : false
+                            }
+                            isToday={todayDate.getTime() === cellDate.getTime()}
+                            isCurrentMonth={month === (yearMonth?.month ?? today.getMonth() + 1)}
                             onDateSelect={onDateSelect}
                         />
-                    );
-                })}
+                        );
+                    })}
+                    </div>
+
             </div>
-        </div>
-    );
-}
+        );
+    }
+);
+
+CalendarGrid.displayName = "CalendarGrid";
+
+export default CalendarGrid;

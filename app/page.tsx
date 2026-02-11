@@ -1,5 +1,5 @@
-import MainCalendar from "@/components/content";
+import Content from "@/components/content";
 
 export default function Home() {
-    return <MainCalendar/>
+    return <Content/>
 }

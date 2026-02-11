@@ -6,7 +6,6 @@ import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
 import { TIMEZONE, USER_ID, WEEK_DAYS } from "@/constants/calendar";
 import { HEADER_HEIGHT, HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
-import { getYearMonthDay } from "@/utils/dateString";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { HoveredColumnState, useTaskContext } from "@/taskContext";
@@ -22,9 +21,10 @@ import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuCont
 import { useCalendarContext } from "@/context";
 import { createWorkSession } from "@/services/workSessions";
 import WorkSessionBlock from "../WorkSession";
+import { dateToKey } from "@/utils/dateConverter";
 
 interface DayColumnProps {
-    dateString: string;
+    date: Date;
     isRightmost: boolean;
 }
 
@@ -33,7 +33,7 @@ type TaskInterval = {
     end: number;
 };
 
-export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
+export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     const { openContextMenu } = useContextMenu();
     const menuItems = [
         {
@@ -60,10 +60,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
 
     const [workSessions, updateWorkSessions] = useCalendarStore("work_sessions");
 
-    const { year, month, day } = getYearMonthDay(dateString);
-    const date = new Date(year, month - 1, day);
-
-    const calendarDate = new CalendarDate({ format: "datestring", dateString, timezone: TIMEZONE });
+    const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
 
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
@@ -95,12 +92,12 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         if (!simpleBarRef.current) return;
 
         const element = simpleBarRef.current.getScrollElement();
-        manager.register(dateString, {
+        manager.register(dateToKey(date), {
             getScrollElement: () => element
         });
 
         const handler = () => {
-            manager.syncFrom(dateString);
+            manager.syncFrom(dateToKey(date));
         };
 
         element?.addEventListener("scroll", handler);
@@ -114,14 +111,14 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         if (!taskContext.subscribeHoveredColumn) return;
 
         return taskContext.subscribeHoveredColumn(state => {
-            hoveredRef.current = state.columnId === dateString;
+            hoveredRef.current = state.columnId === dateToKey(date);
 
             taskContainerRef.current?.classList.toggle(
                 styles.hovered,
                 hoveredRef.current
             );
         });
-    }, [taskContext, dateString]);
+    }, [taskContext, date]);
 
 
     useEffect(() => {
@@ -130,10 +127,11 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
         const unsubscribe = taskContext.subscribeDragDropColumn(handleDrop);
 
         return () => unsubscribe();
-    }, [taskContext, dateString]);
+    }, [taskContext, date]);
 
     const handleDrop = async (state: HoveredColumnState) => {
-        if (state.columnId !== dateString) return;
+        console.log("drop", state);
+        if (state.columnId !== dateToKey(date)) return;
 
         if (taskContext.draggedTaskRef.current) {
             const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
@@ -192,7 +190,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
             updateTasks(prev => 
                 prev.map(t => t.id === task.id ? task : t)
             );
-            console.log("Dropped task:", task.id, "at column", dateString, "-- At time", hourTime.Time24);
+            console.log("Dropped task:", task.id, "at column", date.toISOString(), "-- At time", hourTime.Time24);
         }
     }
 
@@ -263,7 +261,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
             <div ref={headerRef} className={styles.header}>
                 <div className={styles.day_label}>
                     <span className={styles.name}>{WEEK_DAYS[date.getDay()]}</span>
-                    <span className={styles.number}>{day}</span>
+                    <span className={styles.number}>{date.getDate()}</span>
                 </div>
             </div>
 
@@ -276,7 +274,7 @@ export default function DayColumn({ dateString, isRightmost}: DayColumnProps) {
                     <div
                         ref={taskContainerRef}
                         className={styles.task_container}
-                        data-column={dateString}
+                        data-column={dateToKey(date)}
                         style={{ height: taskContainerHeight }}
                     >
                         {visibleTasks.map(task => {

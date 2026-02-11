@@ -12,12 +12,15 @@ type IBaseButton = (
         target?: "_blank" | "_self" | "_parent" | "_top";
     }
 ) &  React.HTMLAttributes<HTMLAnchorElement> & {
-    size?: "sm" | "md" | "lg";
+    size?: "sm" | "md" | "lg" | "min";
+    variant?:
+        | "primary"
+        | "transparent"
     disabled?: boolean;
     children?: React.ReactNode | string;
 };
 
-const buildClasses = (props: IBaseButton) => {
+const buildAttributes = (props: IBaseButton) => {
     const classes = [styles.Button];
 
     if (props.size) {
@@ -28,14 +31,17 @@ const buildClasses = (props: IBaseButton) => {
         classes.push(props.className);
     }
 
-    return classes.join(" ");
-}
+    return {
+        classes: classes.join(" "),
+        variant: props.variant
+    };
+};
 
 const Button = forwardRef((props: IBaseButton, ref) => {
-    const classes = buildClasses(props);
+    const { classes, variant } = buildAttributes(props);
 
     switch (props.element) {
-        case "a": {
+        case "a":
             return (
                 <a
                     {...props}
@@ -43,27 +49,30 @@ const Button = forwardRef((props: IBaseButton, ref) => {
                     href={props.href}
                     target={props.target}
                     className={classes}
+                    data-variant={variant || undefined}
                 >
                     {props.children}
                 </a>
             );
-        }
-        case "button": {
+
+        case "button":
             return (
                 <button
                     {...props}
-                    className={classes}
-                    type={props.type ?? "button"}
                     ref={ref as ForwardedRef<HTMLButtonElement>}
+                    type={props.type ?? "button"}
                     onClick={props.onClick}
+                    className={classes}
+                    data-variant={variant || undefined}
                 >
+                    {props.children}
                 </button>
             );
-        }
-        default: {
+
+        default:
             return null;
-        }
     }
 });
+
 
 export default Button;

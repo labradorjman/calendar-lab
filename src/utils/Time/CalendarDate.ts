@@ -2,10 +2,10 @@ import { CalendarDateBuilder } from "./CalendarDateBuilder";
 
 type CalendarDateProps =
   | { format: "postgres"; postgresTimestamptz: string; timezone?: string }
-  | { format: "datestring"; dateString: string; timezone?: string };
+  | { format: "date"; date: Date; timezone?: string };
 
 export class CalendarDate {
-    private dateString: string;
+    private date: Date;
     private postgresTimestamp: string;
 
     public unixSeconds!: number;
@@ -24,19 +24,15 @@ export class CalendarDate {
             assertPostgresTimestamptz(props.postgresTimestamptz);
 
             this.postgresTimestamp = props.postgresTimestamptz;
-            date = new Date(props.postgresTimestamptz);
 
-            this.dateString = date.toISOString();
-
-            } else {
-            if (!isValidDateString(props.dateString)) {
-                throw new Error("Invalid date string");
-            }
-
-            this.dateString = props.dateString;
-            date = new Date(props.dateString);
-
+            date = parsePostgresTimestamptz(props.postgresTimestamptz);
+            this.date = date;
+        } else if (props.format === "date") {
+            date = props.date;
+            this.date = date;
             this.postgresTimestamp = date.toISOString();
+        } else {
+            throw new Error("Unsupported format");
         }
 
         this.unixSeconds = Math.floor(date.getTime() / 1000);
@@ -69,6 +65,14 @@ export class CalendarDate {
         return new Date(this.endLocalSeconds * 1000);
     }
 }
+
+function parsePostgresTimestamptz(ts: string): Date {
+    // Convert " " to "T" and ensure timezone offset
+    // Example: "2026-02-11 15:30:00+00" => "2026-02-11T15:30:00+00:00"
+    const isoString = ts.replace(" ", "T").replace(/([+-]\d{2})$/, "$1:00");
+    return new Date(isoString);
+}
+
 
 function isPostgresTimestamptz(value: string): boolean {
     const regex =

@@ -1,24 +1,13 @@
-import { getYearMonthDay } from "./dateString";
-import { getAdjacentMonthDays } from "./month";
-
-export function getNextDates(startDate: string, amount: number): string[] {
-    const { year, month, day } = getYearMonthDay(startDate);
-
-    const startIndex = day - 1;
-    const days: string[] = [];
-    const [ _, currentMonthDays, nextMonthDays ] = getAdjacentMonthDays(year, month);
+export function getNextDates(startDate: Date, amount: number): Date[] {
+    const dates: Date[] = [];
 
     for (let i = 0; i < amount; i++) {
-        const index = startIndex + i;
-        if (index < currentMonthDays.dates.length) {
-            days.push(currentMonthDays.dates[index]);
-        } else {
-            const nextMonthIndex = index - currentMonthDays.dates.length;
-            days.push(nextMonthDays.dates[nextMonthIndex]);
-        }
+        const nextDate = new Date(startDate);
+        nextDate.setDate(startDate.getDate() + i);
+        dates.push(nextDate);
     }
 
-    return days;
+    return dates;
 }
 
 function getDaysInMonth(year: number, month: number): number {

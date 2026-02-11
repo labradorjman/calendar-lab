@@ -19,7 +19,6 @@ function DebouncedInput({
     const hasRendered = useRef(false);
 
     React.useEffect(() => {
-        // if (!value) return;
         if (!hasRendered.current) {
             hasRendered.current = true;
             return;
@@ -36,7 +35,6 @@ function DebouncedInput({
         <Input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            //   icon={icon}
             {...props}
         />
     );
@@ -52,9 +50,6 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, fwdRef) => {
                 data-tooltip-content={props.placeholder}
                 data-tooltip-hidden={!props.tooltip}
             >
-                {/* {props.icon && (
-                <Nucleo className={styles.icon} size="sm" icon={props.icon} />
-                )} */}
                 <div className={styles.input_row}>
                     <input
                         {...props}

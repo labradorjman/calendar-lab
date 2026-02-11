@@ -15,6 +15,12 @@
         }
     }
 
+    &[data-icon="true"] {
+        input {
+            padding-inline-start: 40px;
+        }
+    }
+
     .icon {
         position: absolute;
         top: 0;
@@ -24,7 +30,7 @@
         width: fit-content;
         margin: auto;
         z-index: 2;
-        color: var(--text_secondary);
+        color: var(--ss-text_secondary);
     }
 
     &[data-icon="true"] {

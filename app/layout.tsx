@@ -5,7 +5,7 @@ import 'simplebar-react/dist/simplebar.min.css';
 import styles from "./layout.module.scss";
 
 import CalendarContextProvider from "@/context";
-import { getDateString } from "@/utils/dateString";
+import { getDateString, getDateStringFromDate } from "@/utils/dateConverter";
 import { getNextDates } from "@/utils/days";
 import MiniCalendar from "@/components/AppCalendar";
 import Backlog from "@/components/Backlog";
@@ -35,7 +35,6 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     const today = new Date();
-    const todayDate = getDateString(today.getFullYear(), today.getMonth() + 1, today.getDate());
 
     return (
         <html lang="en">
@@ -43,8 +42,8 @@ export default function RootLayout({
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
                 <CalendarContextProvider
-                    initialSelectedDate={todayDate}
-                    initialDateRange={getNextDates(todayDate, 5)}
+                    initialSelectedDate={today}
+                    initialDateRange={getNextDates(today, 5)}
                 >
                     <TaskConextProvider>
                         <ContextMenuProvider>

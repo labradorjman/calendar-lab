@@ -10,17 +10,18 @@ import TimeColumn from "./TimeColumn";
 import TaskModal from "@/components/tasks/TaskModal";
 import useCalendarStore from "@/store";
 import { Task } from "@/models/task";
+import { dateToKey } from "@/utils/dateConverter";
 
 const TIME_COLUMN_NAME = "time_column";
 
-export default function MainCalendar() {
+export default function Content() {
     const calendarContext = useCalendarContext();
     const scrollSyncContext = useScrollSyncContext();
 
     const [_, updateTasks] = useCalendarStore("tasks");
 
     const isInitialMount = useRef<boolean>(true);
-    const prevDateRange = useRef<string[]>([]);
+    const prevDateRange = useRef<Date[]>([]);
 
     useEffect(() => {
         if (isInitialMount.current) {
@@ -33,21 +34,23 @@ export default function MainCalendar() {
             date => !calendarContext.dateRange.includes(date)
         );
         
-        unregisterDays.forEach(date => scrollSyncContext.unregister(date));
+        unregisterDays.forEach(date => scrollSyncContext.unregister(dateToKey(date)));
         
         prevDateRange.current = calendarContext.dateRange;
     }, [calendarContext.dateRange]);
 
     useEffect(() => {
         scrollSyncContext.clearRelations(TIME_COLUMN_NAME);
-        calendarContext.dateRange.forEach(dateString => {
-            scrollSyncContext.removeRelation(dateString, TIME_COLUMN_NAME);
+        calendarContext.dateRange.forEach(date => {
+            scrollSyncContext.removeRelation(dateToKey(date), TIME_COLUMN_NAME);
 
-            const relatedKeys = calendarContext.dateRange.filter(val => val !== dateString);
+            const relatedKeys = calendarContext.dateRange
+                .filter(val => val.getTime() !== date.getTime())
+                .map(dateToKey);
             relatedKeys.push(TIME_COLUMN_NAME);
-            scrollSyncContext.relate(dateString, relatedKeys);
+            scrollSyncContext.relate(dateToKey(date), relatedKeys);
 
-            scrollSyncContext.relate(TIME_COLUMN_NAME, [dateString]);
+            scrollSyncContext.relate(TIME_COLUMN_NAME, [dateToKey(date)]);
         });
     }, [calendarContext.dateRange]);
     
@@ -62,10 +65,10 @@ export default function MainCalendar() {
                     />
                 </div>
                 <div className={styles.right_columns}>
-                    {calendarContext.dateRange.map((dateString, index) => (
+                    {calendarContext.dateRange.map((date, index) => (
                         <DayColumn
-                            key={dateString}
-                            dateString={dateString}
+                            key={dateToKey(date)}
+                            date={date}
                             isRightmost={index === calendarContext.dateRange.length - 1}
                         />
                     ))}

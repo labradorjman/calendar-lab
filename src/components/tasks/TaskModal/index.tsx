@@ -4,10 +4,12 @@ import styles from "./TaskModal.module.scss";
 import { useEffect, useState } from "react";
 import Button from "@/ui/Button";
 import { createDefaultTask, type Task } from "@/models/task";
+
 import Checkbox from "@/ui/Checkbox";
 import { useCalendarContext } from "@/context";
 import { createTask } from "@/services/tasks";
 import Modal, { ModalProps } from "@/components/Modal";
+import DateSelector from "@/ui/DateSelector";
 
 interface TaskModalProps extends Omit<ModalProps, "children"> {
     onTaskCreated: (task: Task) => void;
@@ -88,6 +90,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         });
         onClose();
     }
+
     return (
         <Modal
             open={open}
@@ -119,6 +122,10 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
                             onChange={handleDurationChange}
                             suffix="mins"
                         />
+                    </div>
+                    <div className={`${styles.input_area} ${styles.date_input}`}>
+                        <span className={styles.label}>Starts at</span>
+                        <DateSelector onDateChange={() => {}}/>
                     </div>
                     <Checkbox
                         className={styles.important_check}

@@ -9,11 +9,11 @@ import React, {
 import { Task } from "@/models/task";
 
 interface CalendarContextProps {
-    selectedDate: string;
-    setSelectedDate: Dispatch<SetStateAction<string>>;
+    selectedDate: Date;
+    setSelectedDate: Dispatch<SetStateAction<Date>>;
 
-    dateRange: string[];
-    setDateRange: Dispatch<SetStateAction<string[]>>;
+    dateRange: Date[];
+    setDateRange: Dispatch<SetStateAction<Date[]>>;
 
     isTaskModalOpen: boolean;
     modalTask: Partial<Task> | null;
@@ -23,8 +23,8 @@ interface CalendarContextProps {
 
 interface CalendarContextProviderProps {
     children: React.ReactNode;
-    initialSelectedDate: string;
-    initialDateRange: string[];
+    initialSelectedDate: Date;
+    initialDateRange: Date[];
 }
 
 export const CalendarContext =
@@ -47,8 +47,8 @@ export default function CalendarContextProvider({
     initialSelectedDate,
     initialDateRange,
 }: CalendarContextProviderProps) {
-    const [selectedDate, setSelectedDate] = useState<string>(initialSelectedDate);
-    const [dateRange, setDateRange] = useState<string[]>(initialDateRange);
+    const [selectedDate, setSelectedDate] = useState<Date>(initialSelectedDate);
+    const [dateRange, setDateRange] = useState<Date[]>(initialDateRange);
 
     const [modalTask, setModalTask] =
         useState<Partial<Task> | null>(null);

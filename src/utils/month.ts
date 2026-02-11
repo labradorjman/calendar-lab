@@ -1,5 +1,5 @@
 import { Calendar } from "tsg-calendar-lib";
-import { getDateString } from "./dateString";
+import { getDateString } from "./dateConverter";
 
 export function shiftMonth(
     year: number,
@@ -26,42 +26,42 @@ type AdjacentMonthDays<D extends MonthDelta> = {
   dates: string[];
 };
 
-export function getAdjacentMonthDays(
-    year: number,
-    month: number
-): [
-    AdjacentMonthDays<-1>,
-    AdjacentMonthDays<0>,
-    AdjacentMonthDays<1>
-] {
-    const currentCalendar = new Calendar(year, month);
+// export function getAdjacentMonthDays(
+//     year: number,
+//     month: number
+// ): [
+//     AdjacentMonthDays<-1>,
+//     AdjacentMonthDays<0>,
+//     AdjacentMonthDays<1>
+// ] {
+//     const currentCalendar = new Calendar(year, month);
 
-    const { year: prevYear, month: prevMonth } = shiftMonth(year, month, - 1);
-    const { year: nextYear, month: nextMonth } = shiftMonth(year, month, 1);
+//     const { year: prevYear, month: prevMonth } = shiftMonth(year, month, - 1);
+//     const { year: nextYear, month: nextMonth } = shiftMonth(year, month, 1);
 
-    const prevCalendar = new Calendar(prevYear, prevMonth);
-    const nextCalendar = new Calendar(nextYear, nextMonth);
+//     const prevCalendar = new Calendar(prevYear, prevMonth);
+//     const nextCalendar = new Calendar(nextYear, nextMonth);
 
-    const filteredCurrentDays = currentCalendar.FullCalendarData.flat().filter(day => day !== 0);
-    const filteredPrevDays = prevCalendar.FullCalendarData.flat().filter(day => day !== 0);
-    const filteredNextDays = nextCalendar.FullCalendarData.flat().filter(day => day !== 0);
+//     const filteredCurrentDays = currentCalendar.FullCalendarData.flat().filter(day => day !== 0);
+//     const filteredPrevDays = prevCalendar.FullCalendarData.flat().filter(day => day !== 0);
+//     const filteredNextDays = nextCalendar.FullCalendarData.flat().filter(day => day !== 0);
 
-    return [
-        {
-            delta: -1,
-            days: filteredPrevDays,
-            dates: filteredPrevDays.map(day => getDateString(prevCalendar.CurrentYear, prevMonth, day)),
-        },
-        {
-            delta: 0,
-            days: filteredCurrentDays,
-            dates: filteredCurrentDays.map(day => getDateString(currentCalendar.CurrentYear, month, day)),
-        },
-        {
-            delta: 1,
-            days:filteredNextDays,
-            dates: filteredNextDays.map(day => getDateString(nextCalendar.CurrentYear, nextMonth, day)),
-        },
-    ]
-}
+//     return [
+//         {
+//             delta: -1,
+//             days: filteredPrevDays,
+//             dates: filteredPrevDays.map(day => getDateString(prevCalendar.CurrentYear, prevMonth, day)),
+//         },
+//         {
+//             delta: 0,
+//             days: filteredCurrentDays,
+//             dates: filteredCurrentDays.map(day => getDateString(currentCalendar.CurrentYear, month, day)),
+//         },
+//         {
+//             delta: 1,
+//             days:filteredNextDays,
+//             dates: filteredNextDays.map(day => getDateString(nextCalendar.CurrentYear, nextMonth, day)),
+//         },
+//     ]
+// }
 

@@ -1,5 +1,10 @@
+import { DateFormat } from "@/types/dateFormat";
+
 export const TIMEZONE = "Australia/Sydney";
 export const USER_ID = 1;
+export const MIN_YEAR = 2000;
+export const MAX_YEAR = 2100;
+export const DATE_FORMAT: DateFormat = "dd/MM/yyyy";
 
 export const MONTH_NAMES = [
   "January",

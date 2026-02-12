@@ -31,7 +31,10 @@ export default function Content() {
         }
 
         const unregisterDays = prevDateRange.current.filter(
-            date => !calendarContext.dateRange.includes(date)
+        prev =>
+            !calendarContext.dateRange.some(
+            curr => dateToKey(curr) === dateToKey(prev)
+            )
         );
         
         unregisterDays.forEach(date => scrollSyncContext.unregister(dateToKey(date)));

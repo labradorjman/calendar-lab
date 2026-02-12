@@ -241,12 +241,12 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         <div
             className={styles.column}
             onContextMenu={(e) => {
+                if(e.clientY < HEADER_HEIGHT) return;
+
                 const { hour24, minute } = get24HourMinuteFromOffset(getScrollTop() + e.clientY - HEADER_HEIGHT, SNAP_MINUTES);
                 const hourTime = new HourTime(hour24, minute);
 
                 taskStartSeconds.current = calendarDate.startSeconds + hourTime.toSecondsSince();
-                console.log("onContextMenu daycolumn", taskStartSeconds.current);
-
                 e.preventDefault();
                 e.stopPropagation();
 

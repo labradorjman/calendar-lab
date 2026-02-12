@@ -11,7 +11,7 @@ import MaskedInput from "../MaskedInput";
 import { useSmartFloating } from "@/hooks/useSmartFloating";
 import CalendarGrid from "../CalendarGrid";
 import { YearMonthState } from "@/types/yearMonthState";
-import { getDateStringFromDate, getSegmentsForFormat, getYearMonthDay, parseDateFromInput } from "@/utils/dateConverter";
+import { getDateStringFromDate, getSegmentsForFormat, getYearMonthDay, parseDateFromInput } from "@/utils/date";
 
 interface DateSelectorProps {
     onDateChange: (date: Date | null) => void;

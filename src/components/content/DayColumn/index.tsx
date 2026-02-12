@@ -21,7 +21,7 @@ import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuCont
 import { useCalendarContext } from "@/context";
 import { createWorkSession } from "@/services/workSessions";
 import WorkSessionBlock from "../WorkSession";
-import { dateToKey } from "@/utils/dateConverter";
+import { dateToKey } from "@/utils/date";
 
 interface DayColumnProps {
     date: Date;
@@ -130,7 +130,6 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     }, [taskContext, date]);
 
     const handleDrop = async (state: HoveredColumnState) => {
-        console.log("drop", state);
         if (state.columnId !== dateToKey(date)) return;
 
         if (taskContext.draggedTaskRef.current) {

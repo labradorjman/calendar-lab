@@ -1,14 +1,30 @@
 import { DateFormat } from "@/types/dateFormat";
 import { parse, isValid } from "date-fns";
 
-export function dateToKey (date: Date) {
-    const normalizedDate = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-    ).getTime();
+export function todayUtc(): Date {
+    const now = new Date();
 
-    return `date:${normalizedDate}`;
+    return createUtcDate(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate()
+    );
+}
+
+export function createUtcDate(
+    year: number,
+    month: number,
+    day: number,
+    hours = 0,
+    minutes = 0,
+    seconds = 0,
+    ms = 0
+): Date {
+    return new Date(Date.UTC(year, month, day, hours, minutes, seconds, ms));
+}
+
+export function dateToKey (date: Date) {
+    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
 }
 
 export function getDateString(year: number, month: number, date: number): string {

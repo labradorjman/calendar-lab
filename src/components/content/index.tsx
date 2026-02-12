@@ -10,7 +10,7 @@ import TimeColumn from "./TimeColumn";
 import TaskModal from "@/components/tasks/TaskModal";
 import useCalendarStore from "@/store";
 import { Task } from "@/models/task";
-import { dateToKey } from "@/utils/dateConverter";
+import { dateToKey } from "@/utils/date";
 
 const TIME_COLUMN_NAME = "time_column";
 

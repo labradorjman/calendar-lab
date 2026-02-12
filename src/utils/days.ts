@@ -3,6 +3,7 @@ export function getNextDates(startDate: Date, amount: number): Date[] {
 
     for (let i = 0; i < amount; i++) {
         const nextDate = new Date(startDate);
+        nextDate.setHours(0, 0, 0, 0);
         nextDate.setDate(startDate.getDate() + i);
         dates.push(nextDate);
     }

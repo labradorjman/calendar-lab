@@ -1,5 +1,5 @@
 import { Calendar } from "tsg-calendar-lib";
-import { getDateString } from "./dateConverter";
+import { getDateString } from "./date";
 
 export function shiftMonth(
     year: number,

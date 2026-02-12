@@ -10,7 +10,7 @@ import CalendarCell from "@/ui/CalendarCell";
 import { shiftMonth } from "@/utils/month";
 import { useCalendarContext } from "@/context";
 import { YearMonthState } from "@/types/yearMonthState";
-import { dateToKey } from "@/utils/dateConverter";
+import { dateToKey } from "@/utils/date";
 
 interface CalendarGridProps {
     yearMonth?: YearMonthState;
@@ -23,7 +23,7 @@ const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
         const calendarContext = useCalendarContext();
 
         const today = new Date();
-        today.setUTCHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
 
         const [monthBlock, setMonthBlock] = useState<MonthBlock>(() => {
             const calendar = new Calendar(today.getFullYear(), today.getMonth() + 1);
@@ -61,7 +61,7 @@ const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
                         );
 
                         const cellDate = new Date(year, month - 1, day);
-                        cellDate.setUTCHours(0, 0, 0, 0);
+                        cellDate.setHours(0, 0, 0, 0);
                         
                         const todayDate = today;
 

@@ -5,7 +5,7 @@ import 'simplebar-react/dist/simplebar.min.css';
 import styles from "./layout.module.scss";
 
 import CalendarContextProvider from "@/context";
-import { getDateString, getDateStringFromDate } from "@/utils/dateConverter";
+import { getDateString, getDateStringFromDate, todayUtc } from "@/utils/date";
 import { getNextDates } from "@/utils/days";
 import MiniCalendar from "@/components/AppCalendar";
 import Backlog from "@/components/Backlog";
@@ -35,6 +35,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     return (
         <html lang="en">

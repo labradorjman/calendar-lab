@@ -9,7 +9,7 @@ import { getMonthName } from "@/constants/calendar";
 import { getNextDates } from "@/utils/days";
 import Button from "@/ui/Button";
 import CalendarGrid from "@/ui/CalendarGrid";
-import { getYearMonthDay } from "@/utils/dateConverter";
+import { getYearMonthDay } from "@/utils/date";
 
 interface YearMonthState {
     year: number;
@@ -20,7 +20,7 @@ export default function MiniCalendar() {
     const calendarContext = useCalendarContext();
 
     const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
     
     const [yearMonth, setYearMonth] = useState<YearMonthState>({
         year: today.getFullYear(),

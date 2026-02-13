@@ -5,12 +5,12 @@
 
     .content {
         display: grid;
-        grid-template-columns: 100px 100px 1fr 1fr 1fr;
+        grid-template-columns: 100px 100px 1fr 1fr;
         grid-template-rows: 1fr 1fr 1fr;
         grid-template-areas:
-            "name name name . ."
-            "desc desc desc desc desc"
-            "duration . date . important";
+            "name name name important"
+            "desc desc desc desc"
+            "duration . date .";
 
         gap: var(--gap);
 
@@ -38,7 +38,8 @@
         }
         .important_check {
             grid-area: important;
-            align-self: center;
+            align-self: flex-end;
+            justify-content: center;
         }
     }
 

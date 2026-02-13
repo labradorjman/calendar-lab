@@ -1,5 +1,4 @@
-
-.mini_calendar {
+.app_calendar {
     background-color: #11101e;
     padding: 0.5rem;
 
@@ -30,5 +29,9 @@
             flex-direction: row;
             gap: 1rem;
         }
+    }
+
+    .calendar {
+        padding: var(--gap) 0;
     }
 }

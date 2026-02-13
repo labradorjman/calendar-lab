@@ -158,6 +158,14 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
     *   DayColumn variant
     */
     if (variant === "default") {
+        const showTime = !task.isBacklogged && startUnix && endUnix;
+
+    const timeText = showTime
+        ? `${HourTime.fromUnix(startUnix + tzOffsetSeconds).Time12} - ${
+            HourTime.fromUnix(endUnix + tzOffsetSeconds).Time12WithSuffix
+        }`
+        : null;
+
         return (
             <div 
                 className={styles.task_wrapper}
@@ -179,16 +187,16 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
                     {...props}
                 >
                     <span className={styles.name}>{task.name}</span>
-                    {(!task.isBacklogged && startUnix && endUnix) && (
-                        <span className={styles.time}>{HourTime.fromUnix(startUnix + tzOffsetSeconds).Time12} 
-                        - {HourTime.fromUnix(endUnix + tzOffsetSeconds).Time12WithSuffix}</span>
+                    {timeText && (
+                        <span className={styles.time}>{timeText}</span>
                     )}
+
                     {task.duration !== 0 && (
                         <span className={styles.duration}>{(task.duration / 60)} mins</span>
                     )}
                 </div>
             </div>
-        )
+        );
     }
 
     /*  ------------------

@@ -7,7 +7,7 @@ import styles from "./layout.module.scss";
 import CalendarContextProvider from "@/context";
 import { getDateString, getDateStringFromDate, todayUtc } from "@/utils/date";
 import { getNextDates } from "@/utils/days";
-import MiniCalendar from "@/components/AppCalendar";
+import AppCalendar from "@/components/AppCalendar";
 import Backlog from "@/components/Backlog";
 import ScrollSyncContextProvider from "@/scrollSync/ScrollSyncContext";
 import TaskConextProvider from "@/taskContext";
@@ -50,7 +50,7 @@ export default function RootLayout({
                         <ContextMenuProvider>
                             <div className={styles.layout}>
                                 <div className={styles.side_panel}>
-                                    <MiniCalendar />
+                                    <AppCalendar />
                                     <Backlog />
                                 </div>
                                 <ScrollSyncContextProvider>

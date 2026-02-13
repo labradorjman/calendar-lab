@@ -10,6 +10,7 @@ import { useCalendarContext } from "@/context";
 import { createTask } from "@/services/tasks";
 import Modal, { ModalProps } from "@/components/Modal";
 import DateSelector from "@/ui/DateSelector";
+import { dateToKey } from "@/utils/date";
 
 interface TaskModalProps extends Omit<ModalProps, "children"> {
     onTaskCreated: (task: Task) => void;
@@ -125,7 +126,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
                     </div>
                     <div className={`${styles.input_area} ${styles.date_input}`}>
                         <span className={styles.label}>Starts at</span>
-                        <DateSelector onDateChange={() => {}}/>
+                        <DateSelector onDateChange={(date: Date | null) => {console.log(date)}}/>
                     </div>
                     <Checkbox
                         className={styles.important_check}

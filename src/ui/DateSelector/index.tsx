@@ -5,42 +5,62 @@ import styles from "./DateSelector.module.scss";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import CalendarIcon from '@/assets/icons/calendar.webp';
-import { DATE_FORMAT, MAX_YEAR, MIN_YEAR } from "@/constants/calendar";
+import { DATE_FORMAT, getMonthName, MAX_YEAR, MIN_YEAR } from "@/constants/calendar";
 import Button from "../Button";
 import MaskedInput from "../MaskedInput";
 import { useSmartFloating } from "@/hooks/useSmartFloating";
 import CalendarGrid from "../CalendarGrid";
 import { YearMonthState } from "@/types/yearMonthState";
 import { getDateStringFromDate, getSegmentsForFormat, getYearMonthDay, parseDateFromInput } from "@/utils/date";
+import { shiftMonth } from "@/utils/month";
 
 interface DateSelectorProps {
     onDateChange: (date: Date | null) => void;
 }
 
 export default function DateSelector({ onDateChange }: DateSelectorProps) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const [date, setDate] = useState<Date | null>(null);
     const [dateStr, setDateStr] = useState<string>("");
-    const [yearMonth, setYearMonth] = useState<YearMonthState>();
+    const [yearMonth, setYearMonth] = useState<YearMonthState>({
+        year: today.getFullYear(),
+        month: today.getMonth() + 1,
+    });
     const [showCalendar, setShowCalendar] = useState(false);
     const lastKeyRef = useRef<string | null>(null);
 
-    const dateSelectorRef = useRef<HTMLDivElement>(null);
-    const calendarGridRef = useRef<HTMLDivElement>(null);
-    const { x, y, strategy } = useSmartFloating(dateSelectorRef, calendarGridRef);
+    const startsAtInputRef = useRef<HTMLInputElement>(null);
+
+    const referenceNode = useRef<HTMLElement | null>(null);
+    const floatingNode = useRef<HTMLElement | null>(null);
+
+    const { x, y, strategy, reference, floating } = useSmartFloating();
+
+    const setReference = (node: HTMLElement | null) => {
+        referenceNode.current = node;
+        reference(node); // call the original callback ref
+    };
+
+    const setFloating = (node: HTMLElement | null) => {
+        floatingNode.current = node;
+        floating(node); // call the original callback ref
+    };
 
     useEffect(() => {
-        const parsed = parseDateFromInput(dateStr, DATE_FORMAT);
-        setDate(parsed);
-        onDateChange(parsed);
-    }, [dateStr]);
+        onDateChange(date);
+    }, [date]);
 
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
+            const target = e.target as Node;
+
             if (
-                calendarGridRef.current &&
-                !calendarGridRef.current.contains(e.target as Node)
-                // dateSelectorRef.current &&
-                // !dateSelectorRef.current.contains(e.target as Node)
+                referenceNode.current && 
+                !referenceNode.current.contains(target) &&
+                floatingNode.current &&
+                !floatingNode.current.contains(target)
             ) {
                 setShowCalendar(false);
             }
@@ -142,8 +162,6 @@ export default function DateSelector({ onDateChange }: DateSelectorProps) {
     }
 
     function handleTab(e: React.KeyboardEvent<HTMLInputElement>) {
-        e.preventDefault();
-
         const input = e.currentTarget;
         const pos = input.selectionStart ?? 0;
 
@@ -153,7 +171,10 @@ export default function DateSelector({ onDateChange }: DateSelectorProps) {
         let segment = segments.find(s => pos > s.start && pos <= s.end)
             || segments.find(s => pos + 1 > s.start && pos + 1 <= s.end);
 
-        if (!segment) return;
+        if (!segment) {
+            console.error("Cannot find segment for position:", pos);
+            return;
+        }
 
         const { name, start, end } = segment;
         const today = new Date();
@@ -173,9 +194,16 @@ export default function DateSelector({ onDateChange }: DateSelectorProps) {
                     tabValue = today.getFullYear().toString();
                     break;
             }
+            e.preventDefault();
         } else {
-            tabValue = chars.slice(start, end).join("");
+            if (segment.end === 10) {
+                startsAtInputRef.current?.blur();
+                return;
+            }
 
+            e.preventDefault();
+
+            tabValue = chars.slice(start, end).join("");
             if (name !== "year") {
                 tabValue = tabValue === "0" ? "01" : tabValue.padStart(2, "0");
             }
@@ -188,16 +216,20 @@ export default function DateSelector({ onDateChange }: DateSelectorProps) {
 
     return (
         <div
-            ref={dateSelectorRef}
+            ref={setReference}
             className={styles.date_selector}
         >
             <MaskedInput
+                ref={startsAtInputRef}
                 mask={DATE_FORMAT === "yyyy/MM/dd" ? "dddd/dd/dd" : "dd/dd/dddd"}
                 placeholder={DATE_FORMAT.toLowerCase()}
                 value={dateStr}
                 onBlur={(_) => {
                     const completeStr = completeDateInput(dateStr);
                     setDateStr(completeStr);
+
+                    const parsed = parseDateFromInput(completeStr, DATE_FORMAT);
+                    setDate(parsed);
                 }}
                 onKeyDown={(e) => {
                     lastKeyRef.current = e.key;
@@ -232,25 +264,63 @@ export default function DateSelector({ onDateChange }: DateSelectorProps) {
             </div>
             {showCalendar && (
                 <div
-                    ref={calendarGridRef}
+                    className={styles.calendar_wrapper}
+                    ref={setFloating}
                     style={{
                         position: strategy,
                         top: y ?? 0,
                         left: x ?? 0,
                         zIndex: 9999,
                     }}
-                    >
+                >
+                    <div className={styles.header}>
+                        <div className={styles.title}>
+                            <span className={styles.month}>{getMonthName(yearMonth.month)}</span>
+                            <span>{yearMonth.year}</span>
+                        </div>
+                        <div className={styles.pagination}>
+                            <Button
+                                element="button"
+                                variant="transparent"
+                                size="sm"
+                                onClick={() => {
+                                    const { year, month } = shiftMonth(yearMonth.year, yearMonth.month, -1);
+                                    setYearMonth(() => ({ year, month }));
+                                }}
+                            >
+                                {"<"}
+                            </Button>
+                            <Button
+                                element="button"
+                                variant="transparent"
+                                size="sm"
+                                onClick={() => {
+                                    const { year, month } = shiftMonth(yearMonth.year, yearMonth.month, 1);
+                                    setYearMonth(() => ({ year, month }));
+                                }}
+                            >
+                                {">"}
+                            </Button>
+                        </div>
+                    </div>
                     <CalendarGrid
+                        className={styles.calendar}
+                        keyPrefix="st_select"
+                        selectedDate={date}
                         yearMonth={yearMonth}
                         size="sm"
                         onDateSelect={(date: Date) => {
                             const { year, month } = getYearMonthDay(date);
-                            setYearMonth((prev) => {
-                                if (prev?.year === year && prev?.month === month) return prev;
-                                return { ...prev, year, month };
+                            setYearMonth(prev => {
+                                if (prev.year === year && prev.month === month) {
+                                    return prev;
+                                }
+
+                                return {...prev, year, month};
                             });
 
                             setDate(date);
+                            setDateStr(getDateStringFromDate(date, DATE_FORMAT));
                             setShowCalendar(false);
                         }}
                     />

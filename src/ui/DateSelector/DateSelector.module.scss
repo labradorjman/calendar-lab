@@ -18,4 +18,49 @@
 
         padding: 0 var(--gap_xsmall);
     }
+
+    .calendar_wrapper {
+        border-radius: var(--gap_small);
+        border: 2px solid #80808026;
+        padding: var(--gap_small);
+
+        display: flex;
+        flex-direction: column;
+        gap: var(--gap_small);
+
+        background-color: var(--bg_dark);
+
+        .header {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+
+            .title {
+                grid-area: header;
+
+                display: flex;
+                flex-direction: row;
+                gap: 0.5rem;
+
+                height: 20px;
+                font-size: var(--font_large);
+
+                .month {
+                    font-weight: bold;
+                }
+            }
+
+            .pagination {
+                grid-area: pagination;
+
+                display: flex;
+                flex-direction: row;
+                gap: 1rem;
+            }
+        }
+
+        .calendar {
+            background-color: transparent;
+        }
+    }
 }

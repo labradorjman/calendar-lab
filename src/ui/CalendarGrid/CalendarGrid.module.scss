@@ -20,7 +20,7 @@ $grid-gap: 0.5rem;
     --grid-center: calc(var(--cell-size) + $grid-gap);
 
     background-color: #11101e;
-    padding: var(--gap_small) 0;
+    // padding: var(--gap_small) 0;
 
     display: grid;
 

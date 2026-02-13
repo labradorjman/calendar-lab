@@ -16,7 +16,7 @@ interface YearMonthState {
     month: number;
 }
 
-export default function MiniCalendar() {
+export default function AppCalendar() {
     const calendarContext = useCalendarContext();
 
     const today = new Date();
@@ -29,11 +29,6 @@ export default function MiniCalendar() {
 
     function handleDateSelect(date: Date) {
         if(date === calendarContext.selectedDate) return;
-
-        console.log("Selected date:", date);
-
-        calendarContext.setSelectedDate(date);
-        calendarContext.setDateRange(getNextDates(date, 5));
 
         const { year, month } = getYearMonthDay(date);
         setYearMonth(prev => {
@@ -50,7 +45,7 @@ export default function MiniCalendar() {
     }
 
     return (
-        <div className={styles.mini_calendar}>
+        <div className={styles.app_calendar}>
             <div className={styles.header}>
                 <div className={styles.title}>
                     <span className={styles.month}>{getMonthName(yearMonth.month)}</span>
@@ -59,7 +54,7 @@ export default function MiniCalendar() {
                 <div className={styles.pagination}>
                     <Button
                         element="button"
-                        size="sm"
+                        size="min"
                         onClick={() => {
                             const { year, month } = shiftMonth(yearMonth.year, yearMonth.month, -1);
                             setYearMonth(() => ({ year, month }));
@@ -69,7 +64,7 @@ export default function MiniCalendar() {
                     </Button>
                     <Button
                         element="button"
-                        size="sm"
+                        size="min"
                         onClick={() => {
                             const { year, month } = shiftMonth(yearMonth.year, yearMonth.month, 1);
                             setYearMonth(() => ({ year, month }));
@@ -80,6 +75,8 @@ export default function MiniCalendar() {
                 </div>
             </div>
             <CalendarGrid
+                className={styles.calendar}
+                keyPrefix="app_cal"
                 yearMonth={yearMonth}
                 size="lg"
                 onDateSelect={handleDateSelect}

@@ -35,9 +35,6 @@ importers:
       simplebar-react:
         specifier: ^3.3.2
         version: 3.3.2(react@19.2.3)
-      tsg-calendar-lib:
-        specifier: ^1.7.0
-        version: 1.7.0
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
@@ -1994,9 +1991,6 @@ packages:
 
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==}
-
-  tsg-calendar-lib@1.7.0:
-    resolution: {integrity: sha512-My6qCUVA6oaiTuc59373/dSLhMv2ynwEYmTys+T8qL7oYpwf+j5UdX9y6ZXQZ91zMUEpQgpS5nVRaEe7meL9hw==}
 
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
@@ -4186,8 +4180,6 @@ snapshots:
       json5: 1.0.2
       minimist: 1.2.8
       strip-bom: 3.0.0
-
-  tsg-calendar-lib@1.7.0: {}
 
   tslib@2.8.1: {}
 

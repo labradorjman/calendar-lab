@@ -9,15 +9,15 @@ import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { HEADER_HEIGHT } from "@/constants/column";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { deleteTaskFromStore } from "@/store/tasks";
+import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
     calendarDate?: CalendarDate;
     variant?: "default" | "backlogged";
-    getScrollTop?: () => number;
 }
 
-export default function TaskBlock({ task, calendarDate, variant = "default", getScrollTop, style, ...props }: TaskProps) {
+export default function TaskBlock({ task, calendarDate, variant = "default", style, ...props }: TaskProps) {
     const { openContextMenu } = useContextMenu();
     const menuItems = [
         {
@@ -32,6 +32,7 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
         },
     ];
 
+    const scrollContext = useScrollSyncContext();
     const taskContext = useTaskContext();
 
     const tzOffsetSeconds = calendarDate?.tzOffsetSeconds ?? 0;
@@ -101,7 +102,9 @@ export default function TaskBlock({ task, calendarDate, variant = "default", get
                     pointerY >= rect.top &&
                     pointerY <= rect.bottom
                 ) {
-                    const scrollTop = getScrollTop?.() ?? 0;
+                    const scrollElement = scrollContext.get(id)?.getScrollElement();
+                    const scrollTop = scrollElement?.scrollTop ?? 0;
+
                     const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
                     const localTop = screenTop - HEADER_HEIGHT + scrollTop;
                     nextState = {

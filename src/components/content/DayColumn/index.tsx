@@ -84,7 +84,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         setTaskContainerHeight(24 * HOUR_HEIGHT);
     }, []);
 
-    const manager = useScrollSyncContext();
+    const scrollContext = useScrollSyncContext();
     const taskContainerRef = useRef<HTMLDivElement>(null);
     const simpleBarRef = useRef<SimpleBarCore>(null);
 
@@ -92,12 +92,12 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         if (!simpleBarRef.current) return;
 
         const element = simpleBarRef.current.getScrollElement();
-        manager.register(dateToKey(date), {
+        scrollContext.register(dateToKey(date), {
             getScrollElement: () => element
         });
 
         const handler = () => {
-            manager.syncFrom(dateToKey(date));
+            scrollContext.syncFrom(dateToKey(date));
         };
 
         element?.addEventListener("scroll", handler);
@@ -286,7 +286,6 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                                     key={task.id}
                                     task={task}
                                     calendarDate={calendarDate}
-                                    getScrollTop={getScrollTop}
                                     style={{
                                         position: "absolute",
                                         top: `${secondsToOffset(

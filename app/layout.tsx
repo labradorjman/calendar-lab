@@ -49,11 +49,11 @@ export default function RootLayout({
                     <TaskConextProvider>
                         <ContextMenuProvider>
                             <div className={styles.layout}>
-                                <div className={styles.side_panel}>
-                                    <AppCalendar />
-                                    <Backlog />
-                                </div>
                                 <ScrollSyncContextProvider>
+                                    <div className={styles.side_panel}>
+                                        <AppCalendar />
+                                        <Backlog />
+                                    </div>
                                     <div className={styles.main_content}>{children}</div>      
                                 </ScrollSyncContextProvider>
                             </div>

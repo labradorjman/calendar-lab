@@ -9,6 +9,10 @@ export class ScrollSyncManager {
     private relations = new Map<ScrollKey, Set<ScrollKey>>();
     private isSyncing = false;
 
+    get(key: ScrollKey) {
+        return this.targets.get(key);
+    }
+
     register(key: ScrollKey, target: ScrollTarget) {
         this.targets.set(key, target);
     }

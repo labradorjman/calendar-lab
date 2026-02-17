@@ -95,8 +95,6 @@ export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnP
             if (right === 0) return;
 
             const topOffset = state.topOffset ?? 0;
-            const scrollTop = simpleBarRef.current?.getScrollElement()?.scrollTop ?? 0;
-            // console.log("SCROLL TOP:", scrollTop);
 
             const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
             const hourTime = new HourTime(hour24, minute)

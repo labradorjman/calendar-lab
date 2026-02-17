@@ -76,6 +76,16 @@
             }
         }
 
+        .no_radius_left {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .no_radius_right {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
         .suffix {
             font-size: var(--font_medium);
         }

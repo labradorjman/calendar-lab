@@ -76,7 +76,6 @@ export default function AppCalendar() {
             </div>
             <CalendarGrid
                 className={styles.calendar}
-                keyPrefix="app_cal"
                 yearMonth={yearMonth}
                 size="lg"
                 onDateSelect={handleDateSelect}

@@ -1,19 +1,34 @@
+import { Meridiem } from "@/types/meridiem";
+
 export class HourTime {
     private hour24: number;
     private minute: number;
-    private suffix: "AM" | "PM";
+    private suffix: Meridiem;
 
-    constructor(hour24: number, minute = 0) {
-        if (hour24 < 0 || hour24 > 23) {
-            throw new Error("Hour must be 0–23");
-        }
+    constructor(hour: number, minute = 0, suffix?: Meridiem) {
         if (minute < 0 || minute > 59) {
             throw new Error("Minute must be 0–59");
         }
 
-        this.hour24 = hour24;
+        if (suffix) {
+
+        // 12hr
+        if (hour < 1 || hour > 12) {
+            throw new Error("Hour must be 1–12 for 12-hour format");
+        }
+            this.hour24 = suffix === "AM" ? (hour % 12) : ((hour % 12) + 12);
+            this.suffix = suffix;
+        } else {
+
+        // 24hr
+        if (hour < 0 || hour > 23) {
+            throw new Error("Hour must be 0–23 for 24-hour format");
+        }
+            this.hour24 = hour;
+            this.suffix = hour < 12 ? "AM" : "PM";
+        }
+
         this.minute = minute;
-        this.suffix = hour24 < 12 ? "AM" : "PM";
     }
 
     get Time24(): string {
@@ -50,5 +65,9 @@ export class HourTime {
         const minute = date.getUTCMinutes();
 
         return new HourTime(hour24, minute);
+    }
+
+    static from12Hour(hour12: number, minute: number, suffix: Meridiem): HourTime {
+        return new HourTime(hour12, minute, suffix);
     }
 }

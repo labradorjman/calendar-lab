@@ -12,7 +12,6 @@ import { getNextDates } from "@/utils/days";
 
 interface CalendarGridProps {
     className?: string;
-    keyPrefix: string;
     selectedDate?: Date | null;
     yearMonth: YearMonthState;
     size: "sm" | "md" | "lg";
@@ -20,7 +19,7 @@ interface CalendarGridProps {
 }
 
 const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
-    ({ className, keyPrefix, selectedDate, yearMonth, size, onDateSelect }, ref) => {
+    ({ className, selectedDate, yearMonth, size, onDateSelect }, ref) => {
         const calendarContext = useCalendarContext();
 
         const today = new Date();
@@ -73,7 +72,7 @@ const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
 
                         return (
                             <CalendarCell
-                                key={`${keyPrefix}-${dateToKey(cellDate)}`}
+                                key={dateToKey(cellDate)}
                                 day={cellDate.getDate()}
                                 date={cellDate}
                                 isSelected={isSelected}

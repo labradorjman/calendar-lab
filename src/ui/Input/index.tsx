@@ -5,6 +5,7 @@ interface IInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     tooltip?: boolean;
     error?: string;
     suffix?: string;
+    radius?: "left" | "right" | "both";
 }
 
 function DebouncedInput({
@@ -54,7 +55,11 @@ const Input = forwardRef<HTMLInputElement, IInputProps>((props, fwdRef) => {
                     <input
                         {...props}
                         ref={fwdRef}
-                        className={styles.input}
+                        className={[
+                            styles.input,
+                            props.radius === "left" && styles.no_radius_left,
+                            props.radius === "right" && styles.no_radius_right,
+                        ].filter(Boolean).join(" ")}
                     />
                     {props.suffix && (
                         <span className={styles.suffix}>{props.suffix}</span>

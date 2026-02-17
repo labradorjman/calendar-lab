@@ -3,11 +3,11 @@
     background: unset;
     border: unset;
     color: #fff;
-    font-size: 1em;
+    font-size: var(--font_medium);
     padding: calc(1rem / 2) 1rem;
     margin: 0;
     border-radius: 0.5rem;
-    background-color: #052957;
+    background-color: #173a92;
     transition: all 150ms ease-in-out;
     z-index: 5;
 
@@ -22,8 +22,13 @@
 
     &:hover {
         text-decoration: none;
-        background-color: #093c7e;
+        background-color: #233f85;
         cursor: pointer;
+    }
+
+    &[disabled] {
+        opacity: 0.7;
+        pointer-events: none;
     }
     
     &[data-variant="transparent"] {

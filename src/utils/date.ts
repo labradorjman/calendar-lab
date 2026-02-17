@@ -100,3 +100,18 @@ export function parseDateFromInput(value: string, format: string): Date | null {
     
     return isValid(parsedDate) ? parsedDate : null;
 }
+
+export function getSlashPositions(
+    format: DateFormat,
+    oneBased: boolean = false
+): number[] {
+    const positions: number[] = [];
+
+    for (let i = 0; i < format.length; i++) {
+        if (format[i] === "/") {
+            positions.push(oneBased ? i + 1 : i);
+        }
+    }
+
+    return positions;
+}

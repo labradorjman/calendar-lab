@@ -12,10 +12,12 @@ interface MaskedInputProps
     mask: string;
     replacement?: Record<string, RegExp>;
     onChange?: (value: string) => void;
+
+    radius?: "left" | "right" | "both";
 }
 
 const MaskedInput = forwardRef<HTMLInputElement, MaskedInputProps>(
-    ({ mask, replacement = { "d": /\d/ }, onChange, ...props }, forwardedRef) => {
+    ({ mask, replacement = { "d": /\d/ }, onChange, radius, className, ...props }, forwardedRef) => {
         const maskRef = useMask({ mask, replacement });
 
         const combinedRef = useCallback(
@@ -34,6 +36,7 @@ const MaskedInput = forwardRef<HTMLInputElement, MaskedInputProps>(
             <Input
                 {...props}
                 ref={combinedRef}
+                radius={radius}
                 onChange={(e) => onChange?.(e.target.value)}
             />
         );

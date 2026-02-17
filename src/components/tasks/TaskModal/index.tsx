@@ -1,7 +1,7 @@
 import Input from "@/ui/Input";
 import styles from "./TaskModal.module.scss";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@/ui/Button";
 import { createDefaultTask, type Task } from "@/models/task";
 
@@ -10,7 +10,11 @@ import { useCalendarContext } from "@/context";
 import { createTask } from "@/services/tasks";
 import Modal, { ModalProps } from "@/components/Modal";
 import DateSelector from "@/ui/DateSelector";
-import { dateToKey } from "@/utils/date";
+import TimeInput from "@/ui/TimeInput";
+import { HourTime } from "@/utils/Time/HourTime";
+import { CalendarDate } from "@/utils/Time/CalendarDate";
+import { TIMEZONE } from "@/constants/calendar";
+import { ClearableHandle } from "@/types/componentHandles";
 
 interface TaskModalProps extends Omit<ModalProps, "children"> {
     onTaskCreated: (task: Task) => void;
@@ -21,6 +25,14 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
 
     const [task, setTask] = useState<Omit<Task, "id">>(createDefaultTask());
     const [durationMinutes, setDurationMinutes] = useState<number>(0);
+
+    const dateRef = useRef<ClearableHandle>(null);
+    const timeRef = useRef<ClearableHandle>(null);
+
+    const dateValueRef = useRef<Date | null>(null);
+    const hourTimeRef = useRef<HourTime | null>(null);
+
+    const startsAtRef = useRef<string | null>(null);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTask(prev => ({
@@ -78,7 +90,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         }
     }, [open]);
 
-    function handleCreate() {
+    const handleCreate = () => {
         const taskToCreate: Omit<Task, "id"> = {
             ...task,
             isBacklogged: !task.startsAt,
@@ -90,6 +102,36 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
             setTask(createDefaultTask());
         });
         onClose();
+    }
+
+    const handleDateTimeChange = () => {
+        if (!dateValueRef.current || !hourTimeRef.current) {
+            setTask(prev => ({
+                ...prev,
+                startsAt: null,
+            }));
+            return;
+        }
+
+        const date = dateValueRef.current!;
+        date.setHours(0, 0, 0, 0);
+
+        const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
+        const totalUnixSeconds = calendarDate.startSeconds + hourTimeRef.current!.toSecondsSince();
+
+        const startsAt = new Date(totalUnixSeconds * 1000).toISOString();
+        if (startsAt === startsAtRef.current) return;
+        
+        startsAtRef.current = startsAt;
+        setTask(prev => ({
+            ...prev,
+            startsAt
+        }));
+    }
+
+    const handleDateTimeClear = () => {
+        dateRef.current?.clear();
+        timeRef.current?.clear();
     }
 
     return (
@@ -126,7 +168,25 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
                     </div>
                     <div className={`${styles.input_area} ${styles.date_input}`}>
                         <span className={styles.label}>Starts at</span>
-                        <DateSelector onDateChange={(date: Date | null) => {console.log(date)}}/>
+
+                        <div className={styles.date_row}>
+                            <DateSelector
+                                ref={dateRef}
+                                onDateChange={(date: Date | null) => {
+                                    dateValueRef.current = date;
+                                    handleDateTimeChange();
+                                }}
+                            />
+                            <TimeInput
+                                ref={timeRef}
+                                onTimeChange={(hourTime: HourTime | null) => {
+                                    hourTimeRef.current = hourTime;
+                                    handleDateTimeChange();
+                                }}
+                            />
+                            <span onClick={handleDateTimeClear}>Clear</span>
+                        </div>
+
                     </div>
                     <Checkbox
                         className={styles.important_check}

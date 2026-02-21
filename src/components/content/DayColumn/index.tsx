@@ -19,9 +19,12 @@ import { TASK_MIN_DURATION_SECONDS } from "@/constants/taskLimits";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
-import { createWorkSession } from "@/services/workSessions";
+import { createWorkSession, deleteWorkSession } from "@/services/workSessions";
 import WorkSessionBlock from "../WorkSession";
 import { dateToKey } from "@/utils/date";
+import { createTimeBlock } from "@/services/timeBlocks";
+import { WorkSession } from "@/models/workSession";
+import { removeWorkSessionFromStore } from "@/store/workSessions";
 
 interface DayColumnProps {
     date: Date;
@@ -35,30 +38,30 @@ type TaskInterval = {
 
 export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     const { openContextMenu } = useContextMenu();
+    const contextMenuPos = useRef<{ x: number; y: number } | null>(null);
     const menuItems = [
         {
             id: "add-task",
             label: "Add Task",
-            onSelect: () => {calendarContext.openTaskModal({ startsAt: unixToPostgresTimestamptz(taskStartSeconds.current)})},
+            onSelect: () => {
+                calendarContext.openTaskModal({ 
+                    startsAt: unixToPostgresTimestamptz(taskStartSeconds.current),
+                }
+            )},
         },
         {
             id: "create-work-session",
             label: "Create Work Session",
             onSelect: () => {
-                console.log("Creating work session");
-                // createWorkSession({
-                //     userId: USER_ID,
-                //     name: "activities",
-                //     color: "#fff",
-                //     isExtended: false,
-                //     isCompleted: false,
-                //     completedAt: null,
-                // });
+                calendarContext.openWorkSessionModal({
+                    startsAt: unixToPostgresTimestamptz(taskStartSeconds.current),
+                });
             },
         },
     ];
 
     const [workSessions, updateWorkSessions] = useCalendarStore("work_sessions");
+    const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
 
@@ -124,12 +127,12 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     useEffect(() => {
         if (!taskContext.subscribeDragDropColumn) return;
 
-        const unsubscribe = taskContext.subscribeDragDropColumn(handleDrop);
+        const unsubscribe = taskContext.subscribeDragDropColumn(handleTaskDrop);
 
         return () => unsubscribe();
     }, [taskContext, date]);
 
-    const handleDrop = async (state: HoveredColumnState) => {
+    const handleTaskDrop = async (state: HoveredColumnState) => {
         if (state.columnId !== dateToKey(date)) return;
 
         if (taskContext.draggedTaskRef.current) {
@@ -223,12 +226,6 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         ])
     );
 
-    function secondsToOffset(seconds: number): number {
-        const minutes = seconds / 60;
-        const spacePerMinute = HOUR_HEIGHT / 60;
-        return minutes * spacePerMinute;
-    }
-
     const getScrollTop = useCallback(() => {
         return (
             simpleBarRef.current
@@ -236,7 +233,13 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                 ?.scrollTop ?? 0
         );
     }, []);
-
+    
+    function secondsToOffset(seconds: number): number {
+        const minutes = seconds / 60;
+        const spacePerMinute = HOUR_HEIGHT / 60;
+        return minutes * spacePerMinute;
+    }
+    
     return (
         <div
             className={styles.column}
@@ -249,6 +252,11 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                 taskStartSeconds.current = calendarDate.startSeconds + hourTime.toSecondsSince();
                 e.preventDefault();
                 e.stopPropagation();
+
+                contextMenuPos.current = {
+                    x: e.clientX,
+                    y: e.clientY,
+                };
 
                 openContextMenu({
                     x: e.clientX,

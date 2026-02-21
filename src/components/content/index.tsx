@@ -11,6 +11,8 @@ import TaskModal from "@/components/tasks/TaskModal";
 import useCalendarStore from "@/store";
 import { Task } from "@/models/task";
 import { dateToKey } from "@/utils/date";
+import WorkSessionModal from "../workSessions/WorkSessionModal";
+import { WorkSession } from "@/models/workSession";
 
 const TIME_COLUMN_NAME = "time_column";
 
@@ -19,6 +21,7 @@ export default function Content() {
     const scrollSyncContext = useScrollSyncContext();
 
     const [_, updateTasks] = useCalendarStore("tasks");
+    const [__, updateWorkSessions] = useCalendarStore("work_sessions");
 
     const isInitialMount = useRef<boolean>(true);
     const prevDateRange = useRef<Date[]>([]);
@@ -79,9 +82,16 @@ export default function Content() {
             </div>
             <TaskModal
                 open={calendarContext.isTaskModalOpen}
-                onClose={() => calendarContext.closeTaskModal()}
+                onClose={calendarContext.closeTaskModal}
                 onTaskCreated={(newTask: Task) => {
                     updateTasks(prev => [...prev, newTask]);
+                }}
+            />
+            <WorkSessionModal
+                open={calendarContext.isWorkSessionModalOpen}
+                onClose={calendarContext.closeWorkSessionModal}
+                onWorkSessionCreated={(data) => {
+                    updateWorkSessions(prev => [...prev, data.workSession]);
                 }}
             />
         </>

@@ -8,8 +8,9 @@ import { HourTime } from "@/utils/Time/HourTime";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { HEADER_HEIGHT } from "@/constants/column";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
-import { deleteTaskFromStore } from "@/store/tasks";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
+import { deleteTask } from "@/services/tasks";
+import { removeTaskFromStore } from "@/store/tasks";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
@@ -28,7 +29,10 @@ export default function TaskBlock({ task, calendarDate, variant = "default", sty
         {
             id: "delete-task",
             label: "Delete Task",
-            onSelect: () => {deleteTaskFromStore(task.id)},
+            onSelect: async () => {
+                await deleteTask(task.id);
+                removeTaskFromStore(task.id);
+            },
         },
     ];
 

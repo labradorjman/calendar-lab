@@ -1,5 +1,4 @@
 import { DateFormat } from "@/types/dateFormat";
-import { parse, isValid } from "date-fns";
 
 export function todayUtc(): Date {
     const now = new Date();
@@ -93,12 +92,6 @@ export function getSegmentsForFormat(format: DateFormat) {
     default:
       throw new Error(`Unsupported date format: ${format}`);
   }
-}
-
-export function parseDateFromInput(value: string, format: string): Date | null {
-    const parsedDate = parse(value, format, new Date()); 
-    
-    return isValid(parsedDate) ? parsedDate : null;
 }
 
 export function getSlashPositions(

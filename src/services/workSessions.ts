@@ -16,3 +16,11 @@ export async function createWorkSession(data: Omit<WorkSession, "id">): Promise<
     const workSession: WorkSession = await res.json();
     return workSession;
 }
+
+export async function deleteWorkSession(id: number) {
+    const res = await fetch(`/api/work-sessions/${id}`, {
+        method: "DELETE",
+    });
+
+    if (!res.ok) throw new Error("Failed to delete work session");
+}

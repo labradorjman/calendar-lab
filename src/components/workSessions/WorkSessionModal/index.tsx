@@ -1,31 +1,39 @@
-import Input from "@/ui/Input";
-import styles from "./TaskModal.module.scss";
+"use client";
 
+import Modal, { ModalProps } from "@/components/Modal";
+import styles from "./WorkSessionModal.module.scss";
+import { createDefaultWorkSession, WorkSession } from "@/models/workSession";
+import Input from "@/ui/Input";
 import { useEffect, useRef, useState } from "react";
 import Button from "@/ui/Button";
-import { createDefaultTask, type Task } from "@/models/task";
-
-import Checkbox from "@/ui/Checkbox";
+import { createWorkSession, deleteWorkSession } from "@/services/workSessions";
+import { createTimeBlock } from "@/services/timeBlocks";
+import { removeWorkSessionFromStore } from "@/store/workSessions";
 import { useCalendarContext } from "@/context";
-import { createTask } from "@/services/tasks";
-import Modal, { ModalProps } from "@/components/Modal";
+import { ParsedDateParts } from "@/types/dateFormat";
+import { ClearableHandle } from "@/types/componentHandles";
+import { HourTime } from "@/utils/Time/HourTime";
 import DateSelector from "@/ui/DateSelector";
 import TimeInput from "@/ui/TimeInput";
-import { HourTime } from "@/utils/Time/HourTime";
+import { TimeBlock } from "@/models/timeBlock";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { DATE_FORMAT, TIMEZONE } from "@/constants/calendar";
-import { ClearableHandle } from "@/types/componentHandles";
-import { ParsedDateParts } from "@/types/dateFormat";
 import { parseIsoDateParts } from "@/utils/dateParser";
+import { HexColorPicker } from "react-colorful";
+import ColorSelector from "@/ui/ColorSelector";
 
-interface TaskModalProps extends Omit<ModalProps, "children"> {
-    onTaskCreated: (task: Task) => void;
+interface WorkSessionModalProps extends Omit<ModalProps, "children"> {
+    onWorkSessionCreated: (data: {
+        workSession: WorkSession;
+        timeBlock: TimeBlock;
+    }) => void;
 }
 
-export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalProps) {
+export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}: WorkSessionModalProps) {
     const calendarContext = useCalendarContext();
 
-    const [task, setTask] = useState<Omit<Task, "id">>(createDefaultTask);
+    const [workSession, setWorkSession] = useState<Omit<WorkSession, "id">>(createDefaultWorkSession);
+    const [startsAt, setStartsAt] = useState<string | null>(null);
     const [durationMinutes, setDurationMinutes] = useState<number>(0);
 
     const [parsedDateParts, setParsedDateParts] = useState<ParsedDateParts | null>(null);
@@ -41,19 +49,19 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
     useEffect(() => {
         if (!open) return;
 
-        if (calendarContext.modalTask) {
-            setTask(prev => ({
+        if (calendarContext.modalWorkSession) {
+            setWorkSession(prev => ({
                 ...prev,
-                ...calendarContext.modalTask,
+                ...calendarContext.modalWorkSession!.session ?? {},
             }));
 
-            const startsAt = calendarContext.modalTask.startsAt;
+            const startsAt = calendarContext.modalWorkSession?.startsAt;
             if (startsAt) {
                 setParsedDateParts(parseIsoDateParts(startsAt, DATE_FORMAT));
             }
 
             setDurationMinutes(() => {
-                const durationSeconds = calendarContext.modalTask?.duration;
+                const durationSeconds = calendarContext.modalWorkSession?.duration;
                 if (!durationSeconds || durationSeconds === 0) return 0;
 
                 return Math.floor(durationSeconds / 60);
@@ -62,18 +70,32 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
     }, [open]);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setTask(prev => ({
+        setWorkSession(prev => ({
             ...prev,
             name: e.target.value
         }));
     };
 
-    const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setTask(prev => ({
-            ...prev,
-            description: e.target.value
-        }));
-    };
+    const handleCreate = async () => {
+        let session: WorkSession | null = null;
+        try {
+            session = await createWorkSession(workSession);
+
+            const timeBlock = await createTimeBlock({
+                workSessionId: session.id,
+                startsAt: startsAt!,
+                duration: durationMinutes,
+            });
+            onWorkSessionCreated({ workSession: session, timeBlock });
+        } catch (err) {
+            if (session) {
+                await deleteWorkSession(session.id);
+                removeWorkSessionFromStore(session.id);
+            }
+            throw err;
+        }
+        onClose();
+    }
 
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.value === "") {
@@ -85,41 +107,11 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         if (isNaN(val)) return;
 
         setDurationMinutes(val);
-
-        setTask(prev => ({
-            ...prev,
-            duration: val * 60,
-        }));
-    };
-
-    const handleIsImportantChange = (value: boolean) => {
-        setTask(prev => ({
-            ...prev,
-            isImportant: value
-        }));
-    }
-
-    const handleCreate = () => {
-        const taskToCreate: Omit<Task, "id"> = {
-            ...task,
-            isBacklogged: !task.startsAt,
-            createdAt: new Date().toISOString(),
-        }
-        const createdTask = createTask(taskToCreate);
-        createdTask.then(task => {
-            onTaskCreated(task);
-            setTask(createDefaultTask());
-        });
-        setParsedDateParts(null);
-        onClose();
     }
 
     const handleDateTimeChange = () => {
         if (!dateValueRef.current || !hourTimeRef.current) {
-            setTask(prev => ({
-                ...prev,
-                startsAt: null,
-            }));
+            setStartsAt(null);
             return;
         }
 
@@ -133,12 +125,9 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         if (startsAt === startsAtRef.current) return;
         
         startsAtRef.current = startsAt;
-        setTask(prev => ({
-            ...prev,
-            startsAt
-        }));
+        setStartsAt(startsAt);
     }
-
+    
     const handleDateTimeClear = () => {
         dateRef.current?.clear();
         timeRef.current?.clear();
@@ -147,27 +136,28 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
     return (
         <Modal
             open={open}
-            onClose={() => {
-                setParsedDateParts(null);
-                onClose();
-            }}
+            onClose={onClose}
         >
-            <div className={styles.task_modal}>
+            <div className={styles.work_session_modal}>
                 <div className={styles.content}>
                     <div className={`${styles.input_area} ${styles.name_input}`}>
                         <span className={styles.label}>Name</span>
                         <Input
                             placeholder=""
-                            value={task.name}
+                            value={workSession?.name ?? ""}
                             onChange={handleNameChange}
                         />
                     </div>
-                    <div className={`${styles.input_area} ${styles.description_input}`}>
-                        <span className={styles.label}>Description</span>
-                        <Input
-                            placeholder=""
-                            value={task.description ?? ""}
-                            onChange={handleDescriptionChange}
+                    <div className={`${styles.input_area} ${styles.color_input}`}>
+                        <span className={styles.label}>Color</span>
+                        <ColorSelector
+                            color={workSession.color}
+                            onColorChange={(newColor: string) => {
+                                setWorkSession(prev => ({
+                                    ...prev,
+                                    color: newColor,
+                                }))
+                            }}
                         />
                     </div>
                     <div className={`${styles.input_area} ${styles.duration_input}`}>
@@ -209,19 +199,15 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
                             <span onClick={handleDateTimeClear}>Clear</span>
                         </div>
                     </div>
-                    <Checkbox
-                        className={styles.important_check}
-                        label="Important"
-                        defaultValue={false}
-                        checked={task.isImportant}
-                        onChange={handleIsImportantChange}
-                    />
                 </div>
                 <div className={styles.bottom}>
                     <Button
                         element="button"
                         onClick={handleCreate}
-                        disabled={!task.name.trim()}
+                        disabled={!workSession?.name.trim()
+                            || startsAt === null
+                            || durationMinutes === 0
+                        }
                     >
                         Create
                     </Button>

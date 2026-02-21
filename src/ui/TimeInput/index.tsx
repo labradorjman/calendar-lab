@@ -15,11 +15,12 @@ const SEGMENTS = [
 ];
 
 interface TimeInputProps {
+    defaultValue?: { time12: string, meridiem: Meridiem };
     onTimeChange: (hourTime: HourTime | null) => void;
 }
 
 const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
-    ({ onTimeChange }, ref) => {
+    ({ defaultValue, onTimeChange }, ref) => {
         const [time, setTime] = useState<string>("");
         const [timeStr, setTimeStr] = useState<string>("");
         const [meridiem, setMeridiem] = useState<Meridiem>("AM");
@@ -37,7 +38,7 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
         }));
 
         useEffect(() => {
-            // Time and timeStr not synced up (user still inputting)
+            // Time and timeStr not synced up (user is still inputting)
             if(time !== timeStr) return;
             
             if(!time) {
@@ -47,6 +48,14 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
 
             handleValidTimeChange(time);
         }, [time, meridiem]);
+
+        useEffect(() => {
+            if (!defaultValue) return;
+
+            setTimeStr(defaultValue.time12);
+            setTime(defaultValue.time12);
+            setMeridiem(defaultValue.meridiem);
+        }, [defaultValue]);
 
         function handleValidTimeChange(validTimeStr: string) {
             const [hourStr, minuteStr] = validTimeStr.split(":");
@@ -193,7 +202,7 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
                 />
                 <SegmentedControl
                     className={styles.segmented}
-                    defaultValue="AM"
+                    value={meridiem}
                     options={[
                         { label: "AM", value: "AM" },
                         { label: "PM", value: "PM" },

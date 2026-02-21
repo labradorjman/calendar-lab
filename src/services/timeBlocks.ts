@@ -10,7 +10,7 @@ export async function createTimeBlock(data: Omit<TimeBlock, "id">): Promise<Time
     });
 
     if (!res.ok) {
-        throw new Error("Failed to create work session");
+        throw new Error("Failed to time block session");
     }
 
     const timeBlock: TimeBlock = await res.json();

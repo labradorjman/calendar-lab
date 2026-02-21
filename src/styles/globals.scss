@@ -34,6 +34,17 @@ body {
     background-color: #f1f1f137 !important;
 }
 
-// .simplebar-placeholder {
-//     display: none !important;
-// }
+// react-colorful styling
+.react-colorful__pointer {
+    width: 16px !important;
+    height: 16px !important;
+}
+
+.react-colorful__saturation {
+    border-radius: var(--gap_xsmall) var(--gap_xsmall) 0 0 !important;
+}
+
+.react-colorful__last-control {
+    border-radius: 0 0 var(--gap_xsmall) var(--gap_xsmall) !important;
+    height: 16px !important;
+}

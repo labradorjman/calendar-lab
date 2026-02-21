@@ -26,3 +26,11 @@ export async function createTask(data: Omit<Task, "id">): Promise<Task> {
     const task: Task = await res.json();
     return task;
 }
+
+export async function deleteTask(id: number) {
+    const res = await fetch(`/api/tasks/${id}`, {
+        method: "DELETE",
+    });
+
+    if (!res.ok) throw new Error("Failed to delete task");
+}

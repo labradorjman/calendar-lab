@@ -11,16 +11,18 @@ import MaskedInput from "../MaskedInput";
 import { useSmartFloating } from "@/hooks/useSmartFloating";
 import CalendarGrid from "../CalendarGrid";
 import { YearMonthState } from "@/types/yearMonthState";
-import { getDateStringFromDate, getSegmentsForFormat, getSlashPositions, getYearMonthDay, parseDateFromInput } from "@/utils/date";
+import { getDateStringFromDate, getSegmentsForFormat, getSlashPositions, getYearMonthDay } from "@/utils/date";
 import { shiftMonth } from "@/utils/month";
 import { ClearableHandle } from "@/types/componentHandles";
+import { parseDateFromInput } from "@/utils/dateParser";
 
 interface DateSelectorProps {
+    defaultValue?: string;
     onDateChange: (date: Date | null) => void;
 }
 
 const DateSelector = forwardRef<ClearableHandle, DateSelectorProps>(
-    ({ onDateChange }, ref) => {
+    ({ defaultValue, onDateChange }, ref) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -61,6 +63,15 @@ const DateSelector = forwardRef<ClearableHandle, DateSelectorProps>(
         useEffect(() => {
             onDateChange(date);
         }, [date]);
+
+        useEffect(() => {
+            if (!defaultValue) return;
+
+            setDateStr(defaultValue);
+
+            const parsed = parseDateFromInput(defaultValue, DATE_FORMAT);
+            setDate(parsed);
+        }, [defaultValue]);
 
         useEffect(() => {
             function handleClickOutside(e: MouseEvent) {
@@ -280,8 +291,8 @@ const DateSelector = forwardRef<ClearableHandle, DateSelectorProps>(
                         <Image
                             src={CalendarIcon}
                             alt="Calendar"
-                            width={18}
-                            height={18}
+                            width={16}
+                            height={16}
                             style={{ filter: "brightness(0) invert(1)" }}
                         />
                     </Button>

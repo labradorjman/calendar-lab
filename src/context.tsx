@@ -7,6 +7,13 @@ import React, {
     useState
 } from "react";
 import { Task } from "@/models/task";
+import { WorkSession } from "./models/workSession";
+
+type WorkSessionModalState = {
+    session?: Partial<WorkSession>;
+    startsAt?: string;
+    duration?: number;
+};
 
 interface CalendarContextProps {
     selectedDate: Date;
@@ -19,6 +26,11 @@ interface CalendarContextProps {
     modalTask: Partial<Task> | null;
     openTaskModal: (task?: Partial<Task>) => void;
     closeTaskModal: () => void;
+
+    isWorkSessionModalOpen: boolean;
+    modalWorkSession: WorkSessionModalState | null;
+    openWorkSessionModal: (workSessionModalState?: WorkSessionModalState) => void;
+    closeWorkSessionModal: () => void;
 }
 
 interface CalendarContextProviderProps {
@@ -50,6 +62,7 @@ export default function CalendarContextProvider({
     const [selectedDate, setSelectedDate] = useState<Date>(initialSelectedDate);
     const [dateRange, setDateRange] = useState<Date[]>(initialDateRange);
 
+    // Task modal
     const [modalTask, setModalTask] =
         useState<Partial<Task> | null>(null);
 
@@ -61,6 +74,17 @@ export default function CalendarContextProvider({
         setModalTask(null);
     };
 
+    const [modalWorkSession, setModalWorkSession] =
+        useState<WorkSessionModalState | null>(null);
+
+    const openWorkSessionModal = (data?: WorkSessionModalState) => {
+        setModalWorkSession(data ?? {});
+    };
+
+    const closeWorkSessionModal = () => {
+        setModalWorkSession(null);
+    }
+
     return (
         <CalendarContext.Provider value={{
             selectedDate,
@@ -71,6 +95,10 @@ export default function CalendarContextProvider({
             isTaskModalOpen: modalTask !== null,
             openTaskModal,
             closeTaskModal,
+            modalWorkSession,
+            isWorkSessionModalOpen: modalWorkSession !== null,
+            openWorkSessionModal,
+            closeWorkSessionModal,
         }}>
             {children}
         </CalendarContext.Provider>

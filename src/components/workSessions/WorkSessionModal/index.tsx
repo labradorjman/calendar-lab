@@ -44,7 +44,7 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
     const dateValueRef = useRef<Date | null>(null);
     const hourTimeRef = useRef<HourTime | null>(null);
 
-    const startsAtRef = useRef<string | null>(null);
+    const isClearing = useRef<boolean>(false);
 
     useEffect(() => {
         if (!open) return;
@@ -109,7 +109,12 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
         setDurationMinutes(val);
     }
 
-    const handleDateTimeChange = () => {
+    const handleDateTimeChange = (element: "date" | "time") => {
+        if (isClearing.current) {
+            isClearing.current = false;
+            if (element === "date") return;
+        }
+
         if (!dateValueRef.current || !hourTimeRef.current) {
             setStartsAt(null);
             return;
@@ -121,15 +126,15 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
         const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
         const totalUnixSeconds = calendarDate.startSeconds + hourTimeRef.current!.toSecondsSince();
 
-        const startsAt = new Date(totalUnixSeconds * 1000).toISOString();
-        if (startsAt === startsAtRef.current) return;
-        
-        startsAtRef.current = startsAt;
-        setParsedDateParts(parseIsoDateParts(startsAt, DATE_FORMAT));
+        const newStart = new Date(totalUnixSeconds * 1000).toISOString();
+        if (newStart === startsAt) return;
+
+        setParsedDateParts(parseIsoDateParts(newStart, DATE_FORMAT));
         setStartsAt(startsAt);
     }
     
     const handleDateTimeClear = () => {
+        isClearing.current = true;
         dateRef.current?.clear();
         timeRef.current?.clear();
     }
@@ -179,7 +184,7 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
                                 defaultValue={parsedDateParts?.formattedDate}
                                 onDateChange={(date: Date | null) => {
                                     dateValueRef.current = date;
-                                    handleDateTimeChange();
+                                    handleDateTimeChange("date");
                                 }}
                             />
                             <TimeInput
@@ -194,7 +199,7 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
                                 }
                                 onTimeChange={(hourTime: HourTime | null) => {
                                     hourTimeRef.current = hourTime;
-                                    handleDateTimeChange();
+                                    handleDateTimeChange("time");
                                 }}
                             />
                             <span onClick={handleDateTimeClear}>Clear</span>

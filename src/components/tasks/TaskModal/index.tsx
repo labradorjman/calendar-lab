@@ -36,7 +36,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
     const dateValueRef = useRef<Date | null>(null);
     const hourTimeRef = useRef<HourTime | null>(null);
 
-    const startsAtRef = useRef<string | null>(null);
+    const isClearing = useRef<boolean>(false);
 
     useEffect(() => {
         if (!open) return;
@@ -60,7 +60,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
             });
         }
     }, [open]);
-    
+
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTask(prev => ({
             ...prev,
@@ -114,7 +114,12 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         onClose();
     }
 
-    const handleDateTimeChange = () => {
+    const handleDateTimeChange = (element: "date" | "time") => {
+        if (isClearing.current) {
+            isClearing.current = false;
+            if (element === "date") return;
+        }
+
         if (!dateValueRef.current || !hourTimeRef.current) {
             setTask(prev => ({
                 ...prev,
@@ -130,10 +135,8 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         const totalUnixSeconds = calendarDate.startSeconds + hourTimeRef.current!.toSecondsSince();
 
         const startsAt = new Date(totalUnixSeconds * 1000).toISOString();
-        if (startsAt === startsAtRef.current) return;
+        if (startsAt === task.startsAt) return;
         
-        startsAtRef.current = startsAt;
-        setParsedDateParts(parseIsoDateParts(startsAt, DATE_FORMAT));
         setTask(prev => ({
             ...prev,
             startsAt
@@ -141,6 +144,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
     }
 
     const handleDateTimeClear = () => {
+        isClearing.current = true;
         dateRef.current?.clear();
         timeRef.current?.clear();
     }
@@ -189,7 +193,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
                                 defaultValue={parsedDateParts?.formattedDate}
                                 onDateChange={(date: Date | null) => {
                                     dateValueRef.current = date;
-                                    handleDateTimeChange();
+                                    handleDateTimeChange("date");
                                 }}
                             />
                             <TimeInput
@@ -204,7 +208,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
                                 }
                                 onTimeChange={(hourTime: HourTime | null) => {
                                     hourTimeRef.current = hourTime;
-                                    handleDateTimeChange();
+                                    handleDateTimeChange("time");
                                 }}
                             />
                             <span onClick={handleDateTimeClear}>Clear</span>

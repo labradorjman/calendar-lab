@@ -60,7 +60,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
             });
         }
     }, [open]);
-
+    
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTask(prev => ({
             ...prev,
@@ -133,6 +133,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         if (startsAt === startsAtRef.current) return;
         
         startsAtRef.current = startsAt;
+        setParsedDateParts(parseIsoDateParts(startsAt, DATE_FORMAT));
         setTask(prev => ({
             ...prev,
             startsAt

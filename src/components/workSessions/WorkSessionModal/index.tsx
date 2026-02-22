@@ -125,6 +125,7 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
         if (startsAt === startsAtRef.current) return;
         
         startsAtRef.current = startsAt;
+        setParsedDateParts(parseIsoDateParts(startsAt, DATE_FORMAT));
         setStartsAt(startsAt);
     }
     

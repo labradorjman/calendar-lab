@@ -4,7 +4,6 @@ import styles from "./TimeInput.module.scss";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import MaskedInput from "../MaskedInput";
-import SegmentedControl from "../SegmentedControl";
 import { Meridiem } from "@/types/meridiem";
 import { HourTime } from "@/utils/Time/HourTime";
 import { ClearableHandle } from "@/types/componentHandles";
@@ -181,7 +180,6 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
                 <MaskedInput
                     ref={inputRef}
                     className={styles.input}
-                    radius="left"
                     mask={"dd:dd"}
                     placeholder={"hh:mm"}
                     value={timeStr}
@@ -200,17 +198,16 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
                     setTimeStr(normalized);
                     }}
                 />
-                <SegmentedControl
-                    className={styles.segmented}
-                    value={meridiem}
-                    options={[
-                        { label: "AM", value: "AM" },
-                        { label: "PM", value: "PM" },
-                    ]}
-                    onSegmentSelect={(segment: string) => {
-                        setMeridiem(segment as Meridiem);
-                    }}
-                />
+                <div className={styles.meridiem_area}>
+                    <span
+                        className={styles.select}
+                        onClick={() => setMeridiem((prev) => 
+                            prev === "AM" ? "PM" : "AM"
+                        )}
+                    >
+                        {meridiem}
+                    </span>
+                </div>
             </div>
         );
     }

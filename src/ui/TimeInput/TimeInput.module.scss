@@ -1,10 +1,27 @@
 .wrapper {
-    display: flex;
-    flex-direction: row;
+    position: relative;
+    display: inline-block;
 
-    .segmented {
-        > :first-child {
-            border-radius: 0;
+    .meridiem_area {
+        position: absolute;
+        right: 2px;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 0 var(--gap_small);
+
+        .select {
+            font-size: var(--font_small);
+            font-weight: bold;
+            cursor: pointer;
+
+            &:hover {
+                color: var(--text_secondary);
+            }
         }
     }
 }

@@ -22,6 +22,7 @@ export default function Content() {
 
     const [_, updateTasks] = useCalendarStore("tasks");
     const [__, updateWorkSessions] = useCalendarStore("work_sessions");
+    const [___, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     const isInitialMount = useRef<boolean>(true);
     const prevDateRange = useRef<Date[]>([]);
@@ -83,8 +84,9 @@ export default function Content() {
             <TaskModal
                 open={calendarContext.isTaskModalOpen}
                 onClose={calendarContext.closeTaskModal}
-                onTaskCreated={(newTask: Task) => {
-                    updateTasks(prev => [...prev, newTask]);
+                onTaskCreated={(data) => {
+                    updateTasks(prev => [...prev, data.task]);
+                    updateTimeBlocks(prev => [...prev, data.timeBlock]);
                 }}
             />
             <WorkSessionModal
@@ -92,6 +94,7 @@ export default function Content() {
                 onClose={calendarContext.closeWorkSessionModal}
                 onWorkSessionCreated={(data) => {
                     updateWorkSessions(prev => [...prev, data.workSession]);
+                    updateTimeBlocks(prev => [...prev, data.timeBlock]);
                 }}
             />
         </>

@@ -19,7 +19,6 @@ import { TimeBlock } from "@/models/timeBlock";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { DATE_FORMAT, TIMEZONE } from "@/constants/calendar";
 import { parseIsoDateParts } from "@/utils/dateParser";
-import { HexColorPicker } from "react-colorful";
 import ColorSelector from "@/ui/ColorSelector";
 
 interface WorkSessionModalProps extends Omit<ModalProps, "children"> {
@@ -84,7 +83,7 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
             const timeBlock = await createTimeBlock({
                 workSessionId: session.id,
                 startsAt: startsAt!,
-                duration: durationMinutes,
+                duration: durationMinutes * 60,
             });
             onWorkSessionCreated({ workSession: session, timeBlock });
         } catch (err) {
@@ -130,7 +129,7 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
         if (newStart === startsAt) return;
 
         setParsedDateParts(parseIsoDateParts(newStart, DATE_FORMAT));
-        setStartsAt(startsAt);
+        setStartsAt(newStart);
     }
     
     const handleDateTimeClear = () => {

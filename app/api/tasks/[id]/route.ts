@@ -11,7 +11,7 @@ export async function PATCH(
     const id = Number(params.id);
 
     if (!Number.isInteger(id) || id <= 0) {
-        return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+        return NextResponse.json({ error: "[Task] Invalid id" }, { status: 400 });
     }
 
     const body: Partial<Task> = await req.json();
@@ -20,7 +20,7 @@ export async function PATCH(
     const index = tasks.findIndex(t => t.id === id);
 
     if (index === -1) {
-        return NextResponse.json({ error: "Not found" }, { status: 404 });
+        return NextResponse.json({ error: "[Task] Not found" }, { status: 404 });
     }
 
     const updatedTask: Task = {

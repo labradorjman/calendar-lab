@@ -4,7 +4,7 @@ import styles from "@/components/content/DayColumn/DayColumn.module.scss";
 
 import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
-import { TIMEZONE, USER_ID, WEEK_DAYS } from "@/constants/calendar";
+import { TIMEZONE, WEEK_DAYS } from "@/constants/calendar";
 import { HEADER_HEIGHT, HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
@@ -19,22 +19,15 @@ import { TASK_MIN_DURATION_SECONDS } from "@/constants/taskLimits";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
-import { createWorkSession, deleteWorkSession } from "@/services/workSessions";
 import WorkSessionBlock from "../WorkSession";
 import { dateToKey } from "@/utils/date";
-import { createTimeBlock } from "@/services/timeBlocks";
-import { WorkSession } from "@/models/workSession";
-import { removeWorkSessionFromStore } from "@/store/workSessions";
+import { updateTimeBlock } from "@/services/timeBlocks";
+import { TimeBlock } from "@/models/timeBlock";
 
 interface DayColumnProps {
     date: Date;
     isRightmost: boolean;
 }
-
-type TaskInterval = {
-    start: number;
-    end: number;
-};
 
 export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     const { openContextMenu } = useContextMenu();
@@ -60,7 +53,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         },
     ];
 
-    const [workSessions, updateWorkSessions] = useCalendarStore("work_sessions");
+    const [workSessions] = useCalendarStore("work_sessions");
     const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
@@ -86,6 +79,12 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         setContentHeight(24 * HOUR_HEIGHT);
         setTaskContainerHeight(24 * HOUR_HEIGHT);
     }, []);
+    
+    const timeBlocksRef = useRef(timeBlocks);
+
+    useEffect(() => {
+        timeBlocksRef.current = timeBlocks;
+    }, [timeBlocks]);
 
     const scrollContext = useScrollSyncContext();
     const taskContainerRef = useRef<HTMLDivElement>(null);
@@ -123,7 +122,6 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         });
     }, [taskContext, date]);
 
-
     useEffect(() => {
         if (!taskContext.subscribeDragDropColumn) return;
 
@@ -139,7 +137,8 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
             const hourTime = new HourTime(hour24, minute);
 
-            const duration = taskContext.draggedTaskRef.current.duration;
+            const taskTimeBlock = timeBlocksRef.current.find(tb => tb.taskId === taskContext.draggedTaskRef.current!.id);
+            const duration = taskTimeBlock?.duration ?? 0;
             if (duration === 0 || duration < TASK_MIN_DURATION_SECONDS) {
                 console.log("--- Task must be 15 minutes long");
                 return;
@@ -153,15 +152,11 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                 const taskStartUnix = calendarDate.startSeconds + hourTime.toSecondsSince();
                 const taskEndUnix = taskStartUnix + duration;
 
-                const hasOverlap = Object.entries(
-                    intervalsByIdRef.current
-                ).some(([id, interval]) => {
-                    if (id === taskId.toString()) return false;
+                const hasOverlap = todayTimeBlocks.some(tb => {
+                    const start = postgresTimestamptzToUnix(tb.startsAt);
+                    const end = start + tb.duration;
 
-                     return (
-                        taskStartUnix < interval.end &&
-                        taskEndUnix > interval.start
-                    );
+                    return taskStartUnix < end && taskEndUnix > start;
                 });
 
                 if (hasOverlap) {
@@ -169,62 +164,78 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                     return;
                 }
             }
-
             const taskId = taskContext.draggedTaskRef.current!.id;
-            const [task, error] = await handlePromise(
-                updateTask(
-                    taskId,
-                    {
-                        startsAt: calendarDate
-                            .builder()
-                            .addSeconds(hourTime.toSecondsSince())
-                            .toISOString(),
-                        isBacklogged: false,
+            const [timeBlock, timeBlockError] = await handlePromise(
+                updateTimeBlock(
+                    taskTimeBlock!.id,
+                    { startsAt:
+                        calendarDate.builder()
+                        .addSeconds(hourTime.toSecondsSince())
+                        .toISOString()
                     }
                 )
+            )
+            if (!timeBlock) {
+                console.log(`Error updating time block [${taskTimeBlock!.id}] related to task [${taskId}]:`, timeBlockError);
+            } else {
+                updateTimeBlocks(prev => 
+                    prev.map(tb => tb.id === timeBlock.id ? timeBlock : tb)
+                )
+            }
+
+            const [task, error] = await handlePromise(
+                updateTask(taskId, {isBacklogged: false})
             );
             
             if (!task) {
                 console.error(`Error updating task-{${taskId}}:`, error);
-                return;
+            } else {
+                updateTasks(prev => 
+                    prev.map(t => t.id === task.id ? task : t)
+                );
+                console.log("Dropped task:", task.id, "at column", date.toISOString(), "-- At time", hourTime.Time24);
             }
-
-            updateTasks(prev => 
-                prev.map(t => t.id === task.id ? task : t)
-            );
-            console.log("Dropped task:", task.id, "at column", date.toISOString(), "-- At time", hourTime.Time24);
         }
     }
 
-    const tasksWithUnix = useMemo(() => {
-        return tasks.map(task => ({
-            ...task,
-            startsAtUnix: task.startsAt
-                ? postgresTimestamptzToUnix(task.startsAt)
-                : undefined
-        }));
-    }, [tasks]);
+    const toKey = (type: "task" | "work_session", id: number | string) =>
+        `${type}-${id}`;
 
-    const visibleTasks = useMemo(() => {
-        return tasksWithUnix.filter(
-            task =>
-                !task.isBacklogged &&
-                task.startsAtUnix !== undefined &&
-                task.startsAtUnix >= calendarDate.startSeconds &&
-                task.startsAtUnix < calendarDate.endSeconds
-        );
-    }, [tasksWithUnix, calendarDate]);
+    const { timeBlockByKey, todayTimeBlocks } = useMemo(() => {
+        const map = new Map<string, TimeBlock>();
+        const today: TimeBlock[] = [];
 
-    const intervalsByIdRef = useRef<Record<string, TaskInterval>>({});
-    intervalsByIdRef.current = Object.fromEntries(
-        visibleTasks.map(task => [
-            task.id,
-            {
-                start: task.startsAtUnix!,
-                end: task.startsAtUnix! + task.duration
+        for (const tb of timeBlocks) {
+            if (tb.taskId) {
+                map.set(toKey("task", tb.taskId), tb);
+            } else if (tb.workSessionId) {
+                map.set(toKey("work_session", tb.workSessionId), tb);
+            } else {
+                console.error(`Error mapping time block [${tb.id}]`);
             }
-        ])
-    );
+
+            const unixStart = postgresTimestamptzToUnix(tb.startsAt);
+            const unixEnd = unixStart + tb.duration;
+
+            if ((unixStart >= calendarDate.startSeconds &&
+                unixStart < calendarDate.endSeconds) || 
+                (unixEnd > calendarDate.startSeconds &&
+                unixEnd < calendarDate.endSeconds)
+            ) {
+                today.push(tb);
+            }
+        }
+
+        return {
+            timeBlockByKey: map,
+            todayTimeBlocks: today,
+        };
+    }, [timeBlocks]);
+
+    const { taskById, workSessionById } = useMemo(() => ({
+        taskById: new Map(tasks.map(t => [t.id, t])),
+        workSessionById: new Map(workSessions.map(w => [w.id, w])),
+    }), [tasks, workSessions]);
 
     const getScrollTop = useCallback(() => {
         return (
@@ -284,38 +295,53 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                         data-column={dateToKey(date)}
                         style={{ height: taskContainerHeight }}
                     >
-                        {visibleTasks.map(task => {
-                            const startsAtLocalUnix =
-                                task.startsAtUnix! +
-                                calendarDate.tzOffsetSeconds;
+                        {todayTimeBlocks.map(timeBlock => {
+                            if (timeBlock.taskId) {
+                                const task = taskById.get(timeBlock.taskId);
+                                const startsAtLocalUnix =
+                                    postgresTimestamptzToUnix(timeBlock.startsAt) +
+                                    calendarDate.tzOffsetSeconds;
 
-                            return (
-                                <TaskBlock
-                                    key={task.id}
-                                    task={task}
-                                    calendarDate={calendarDate}
-                                    style={{
-                                        position: "absolute",
-                                        top: `${secondsToOffset(
-                                            startsAtLocalUnix -
-                                                calendarDate.startLocalSeconds
-                                        )}px`,
-                                        height:
-                                            task.duration !== 0
-                                                ? `${(HOUR_HEIGHT / 60) * (task.duration / 60)}px`
-                                                : "auto",
-                                    }}
-                                />
+                                if (task?.isBacklogged) return null;
+                                
+                                return (
+                                    <TaskBlock
+                                        key={task!.id}
+                                        task={task!}
+                                        timeBlock={timeBlock}
+                                        calendarDate={calendarDate}
+                                        style={{
+                                            position: "absolute",
+                                            top: `${secondsToOffset(
+                                                startsAtLocalUnix -
+                                                    calendarDate.startLocalSeconds
+                                            )}px`,
+                                            height:
+                                                timeBlock.duration !== 0
+                                                    ? `${(HOUR_HEIGHT / 60) * (timeBlock.duration / 60)}px`
+                                                    : "auto",
+                                        }}
+                                    />
                             );
+
+                            } else if (timeBlock.workSessionId) {
+                                const workSession = workSessions.find(session => session.id === timeBlock.workSessionId);
+                                if (!workSession) {
+                                    console.error("Could not find work session linked to a timeblock with id:", timeBlock.id);
+                                    return null;
+                                }
+
+                                return (
+                                    <WorkSessionBlock
+                                        key={timeBlock.id}
+                                        workSession={workSession}
+                                        timeBlock={timeBlock}
+                                    />
+                                );
+                            }
+
+                           
                         })}
-                        {/* {workSessions.map(session => {
-                            return (
-                                <WorkSessionBlock
-                                    key={`ws-${session.id}`}
-                                    workSession={session}
-                                />
-                            );
-                        })} */}
                     </div>
                 </div>
             </SimpleBar>

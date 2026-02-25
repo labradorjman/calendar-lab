@@ -6,14 +6,14 @@ import styles from "./WorkSession.module.scss";
 
 interface WorkSessionProps {
     workSession: WorkSession;
-    // timeBlock: TimeBlock;
+    timeBlock: TimeBlock;
 }
 
-export default function WorkSessionBlock({ workSession }: WorkSessionProps) {
+export default function WorkSessionBlock({ workSession, timeBlock }: WorkSessionProps) {
     
     return (
         <div
-            className={styles.session}
+            className={styles.session_block}
             style={{
                 position: "absolute",
                 top: "100px",

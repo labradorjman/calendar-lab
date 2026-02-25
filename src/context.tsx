@@ -9,6 +9,12 @@ import React, {
 import { Task } from "@/models/task";
 import { WorkSession } from "./models/workSession";
 
+type TaskModalState = {
+    task?: Partial<Task>;
+    startsAt?: string;
+    duration?: number;
+}
+
 type WorkSessionModalState = {
     session?: Partial<WorkSession>;
     startsAt?: string;
@@ -23,8 +29,8 @@ interface CalendarContextProps {
     setDateRange: Dispatch<SetStateAction<Date[]>>;
 
     isTaskModalOpen: boolean;
-    modalTask: Partial<Task> | null;
-    openTaskModal: (task?: Partial<Task>) => void;
+    modalTask: TaskModalState | null;
+    openTaskModal: (taskModalState?: TaskModalState) => void;
     closeTaskModal: () => void;
 
     isWorkSessionModalOpen: boolean;
@@ -64,10 +70,10 @@ export default function CalendarContextProvider({
 
     // Task modal
     const [modalTask, setModalTask] =
-        useState<Partial<Task> | null>(null);
+        useState<TaskModalState | null>(null);
 
-    const openTaskModal = (task?: Partial<Task>) => {
-        setModalTask(task ?? {});
+    const openTaskModal = (data?: TaskModalState) => {
+        setModalTask(data ?? {});
     };
 
     const closeTaskModal = () => {

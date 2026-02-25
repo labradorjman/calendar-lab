@@ -1,6 +1,6 @@
 import { Task } from "@/models/task";
 import styles from "./Task.module.scss";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useClickDrag } from "@/hooks/useClickDrag";
 import { HoveredColumnState, useTaskContext } from "@/taskContext";
 import { postgresTimestamptzToUnix } from "@/utils/time";
@@ -11,14 +11,16 @@ import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuCont
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { deleteTask } from "@/services/tasks";
 import { removeTaskFromStore } from "@/store/tasks";
+import { TimeBlock } from "@/models/timeBlock";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
+    timeBlock?: TimeBlock;
     calendarDate?: CalendarDate;
     variant?: "default" | "backlogged";
 }
 
-export default function TaskBlock({ task, calendarDate, variant = "default", style, ...props }: TaskProps) {
+export default function TaskBlock({ task, timeBlock, calendarDate, variant = "default", style, ...props }: TaskProps) {
     const { openContextMenu } = useContextMenu();
     const menuItems = [
         {
@@ -153,12 +155,11 @@ export default function TaskBlock({ task, calendarDate, variant = "default", sty
         },
     });
 
-    const startUnix = task.startsAt
-        ? postgresTimestamptzToUnix(task.startsAt)
+    const startUnix = timeBlock
+        ? postgresTimestamptzToUnix(timeBlock.startsAt)
         : null;
-
-    const endUnix = task.startsAt && task.duration > 0
-        ? startUnix! + task.duration
+    const endUnix = timeBlock && timeBlock.duration > 0
+        ? startUnix! + timeBlock.duration
         : null;
 
     /*  -----------------
@@ -172,7 +173,7 @@ export default function TaskBlock({ task, calendarDate, variant = "default", sty
             HourTime.fromUnix(endUnix + tzOffsetSeconds).Time12WithSuffix
         }`
         : null;
-
+        
         return (
             <div 
                 className={styles.task_wrapper}
@@ -198,8 +199,8 @@ export default function TaskBlock({ task, calendarDate, variant = "default", sty
                         <span className={styles.time}>{timeText}</span>
                     )}
 
-                    {task.duration !== 0 && (
-                        <span className={styles.duration}>{(task.duration / 60)} mins</span>
+                    {timeBlock && timeBlock.duration !== 0 && (
+                        <span className={styles.duration}>{(timeBlock.duration / 60)} mins</span>
                     )}
                 </div>
             </div>
@@ -228,8 +229,8 @@ export default function TaskBlock({ task, calendarDate, variant = "default", sty
         >
             <span className={styles.name}>{task.name}</span>
             <span className={styles.description}>{task.description}</span>
-            {task.duration !== 0 && (
-                <span className={styles.duration}>{(task.duration / 60)} mins</span>
+            {timeBlock && timeBlock.duration !== 0 && (
+                <span className={styles.duration}>{(timeBlock.duration / 60)} mins</span>
             )}
         </div>
     );

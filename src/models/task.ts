@@ -7,8 +7,6 @@ export interface Task {
     tag1Id: number | null,
     tag2Id: number | null,
     orderIndex: number,             // Default 1
-    startsAt: string | null,
-    duration: number,               // Default 0
     isImportant: boolean,
     isBacklogged: boolean,
     isCompleted: boolean,
@@ -26,8 +24,6 @@ export function createDefaultTask(): Omit<Task, "id">{
         tag1Id: null,
         tag2Id: null,
         orderIndex: 1,
-        startsAt: null,
-        duration: 0,
         isImportant: false,
         isBacklogged: false,
         isCompleted: false,

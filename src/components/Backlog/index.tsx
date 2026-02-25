@@ -2,7 +2,7 @@
 
 import styles from "@/components/Backlog/Backlog.module.scss";
 import Button from "@/ui/Button";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Task } from "@/models/task";
 import TaskBlock from "@/components/tasks/TaskBlock";
 import SimpleBar from "simplebar-react";
@@ -13,6 +13,8 @@ import { handlePromise } from "@/utils/handleError";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
 import { WorkSession } from "@/models/workSession";
+import { deleteTimeBlock } from "@/services/timeBlocks";
+import { TimeBlock } from "@/models/timeBlock";
 
 export default function Backlog() {
     const { openContextMenu } = useContextMenu();
@@ -27,6 +29,7 @@ export default function Backlog() {
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
     const [_, updateWorkSessions] = useCalendarStore("work_sessions");
+    const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     const calendarContext = useCalendarContext();
 
@@ -45,8 +48,16 @@ export default function Backlog() {
             updateWorkSessions(() => data);
         }
 
+        async function fetchTimeBlocks() {
+            const res = await fetch("/api/time-blocks");
+            const data: TimeBlock[] = await res.json();
+
+            updateTimeBlocks(() => data);
+        }
+
         fetchTasks();
         fetchWorkSessions();
+        fetchTimeBlocks();
     }, []);
     
     useEffect(() => {
@@ -61,15 +72,13 @@ export default function Backlog() {
 
         if (taskContext.draggedTaskRef.current) {
             const taskId = taskContext.draggedTaskRef.current!.id;
+
             const [task, error] = await handlePromise(
-                updateTask(
-                    taskId,
-                    { startsAt: null, isBacklogged: true }
-                )
+                updateTask(taskId, { isBacklogged: true })
             );
 
             if (!task) {
-                console.error(`Error updating task-{${taskId}}:`, error);
+                console.error(`Error updating task [${taskId}]:`, error);
                 return;
             }
 
@@ -79,13 +88,32 @@ export default function Backlog() {
             console.log("Dropped task:", task.id, "at column", "backlog-column");
         }
     }
+    const toKey = (type: "task" | "work_session", id: number | string) =>
+        `${type}-${id}`;
 
-    const visibleTasks = tasks.filter(
-        task =>
-            task.isBacklogged ||
-            task.startsAt === undefined
-    );
-    
+    const timeBlockByKey = useMemo(() => {
+        const map = new Map<string, TimeBlock>();
+
+        for (const tb of timeBlocks) {
+            if (tb.taskId) {
+                map.set(toKey("task", tb.taskId), tb);
+            } else if (tb.workSessionId) {
+                map.set(toKey("work_session", tb.workSessionId), tb);
+            } else {
+                console.error(`Error mapping time block [${tb.id}]`);
+            }
+        }
+
+        return map;
+    }, [timeBlocks]);
+
+    const visibleTaskTimeBlocks = tasks
+        .filter(task => task.isBacklogged)
+        .map(task => ({
+            task,
+            timeBlock: timeBlockByKey.get(toKey("task", task.id))
+        }));
+
     return (
         <div className={styles.backlog}>
             <div className={styles.header}>
@@ -118,10 +146,11 @@ export default function Backlog() {
                     className={styles.task_list}
                     style={{ maxHeight: "100%" }}
                 >
-                    {visibleTasks.map(task => (
+                    {visibleTaskTimeBlocks.map(t => (
                         <TaskBlock
-                            key={task.id}
-                            task={task}
+                            key={t.task.id}
+                            task={t.task}
+                            timeBlock={t.timeBlock}
                             variant="backlogged"
                         />
                     ))}

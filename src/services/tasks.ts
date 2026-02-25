@@ -6,7 +6,9 @@ export async function updateTask(id: number, data: Partial<Task>): Promise<Task>
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
+    
     if (!res.ok) throw new Error("Failed to update task");
+
     return res.json();
 }
 

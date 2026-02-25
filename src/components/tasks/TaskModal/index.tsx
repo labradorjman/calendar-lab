@@ -7,7 +7,7 @@ import { createDefaultTask, type Task } from "@/models/task";
 
 import Checkbox from "@/ui/Checkbox";
 import { useCalendarContext } from "@/context";
-import { createTask } from "@/services/tasks";
+import { createTask, deleteTask } from "@/services/tasks";
 import Modal, { ModalProps } from "@/components/Modal";
 import DateSelector from "@/ui/DateSelector";
 import TimeInput from "@/ui/TimeInput";
@@ -17,15 +17,22 @@ import { DATE_FORMAT, TIMEZONE } from "@/constants/calendar";
 import { ClearableHandle } from "@/types/componentHandles";
 import { ParsedDateParts } from "@/types/dateFormat";
 import { parseIsoDateParts } from "@/utils/dateParser";
+import { createTimeBlock } from "@/services/timeBlocks";
+import { TimeBlock } from "@/models/timeBlock";
+import { removeTaskFromStore } from "@/store/tasks";
 
 interface TaskModalProps extends Omit<ModalProps, "children"> {
-    onTaskCreated: (task: Task) => void;
+    onTaskCreated: (data: {
+        task: Task;
+        timeBlock: TimeBlock;
+    }) => void;
 }
 
 export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalProps) {
     const calendarContext = useCalendarContext();
 
     const [task, setTask] = useState<Omit<Task, "id">>(createDefaultTask);
+    const [startsAt, setStartsAt] = useState<string | null>(null);
     const [durationMinutes, setDurationMinutes] = useState<number>(0);
 
     const [parsedDateParts, setParsedDateParts] = useState<ParsedDateParts | null>(null);
@@ -99,18 +106,31 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         }));
     }
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
+        let createdTask: Task | null = null;
         const taskToCreate: Omit<Task, "id"> = {
             ...task,
-            isBacklogged: !task.startsAt,
+            isBacklogged: !startsAt,
             createdAt: new Date().toISOString(),
         }
-        const createdTask = createTask(taskToCreate);
-        createdTask.then(task => {
-            onTaskCreated(task);
-            setTask(createDefaultTask());
-        });
-        setParsedDateParts(null);
+
+        try {
+            createdTask = await createTask(taskToCreate);
+
+            const timeBlock = await createTimeBlock({
+                taskId: createdTask.id,
+                startsAt: startsAt!,
+                duration: durationMinutes * 60,
+            });
+            onTaskCreated({ task: createdTask, timeBlock });
+        }
+        catch (err) {
+            if(createdTask) {
+                await deleteTask(createdTask.id);
+                removeTaskFromStore(createdTask.id);
+            }
+            throw err;
+        }
         onClose();
     }
 
@@ -121,10 +141,7 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         }
 
         if (!dateValueRef.current || !hourTimeRef.current) {
-            setTask(prev => ({
-                ...prev,
-                startsAt: null,
-            }));
+            setStartsAt(null);
             return;
         }
 
@@ -134,13 +151,10 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
         const totalUnixSeconds = calendarDate.startSeconds + hourTimeRef.current!.toSecondsSince();
 
-        const startsAt = new Date(totalUnixSeconds * 1000).toISOString();
-        if (startsAt === task.startsAt) return;
+        const newStart = new Date(totalUnixSeconds * 1000).toISOString();
+        if (newStart === startsAt) return;
         
-        setTask(prev => ({
-            ...prev,
-            startsAt
-        }));
+        setStartsAt(newStart);
     }
 
     const handleDateTimeClear = () => {

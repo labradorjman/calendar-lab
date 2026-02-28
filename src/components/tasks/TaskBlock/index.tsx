@@ -13,6 +13,8 @@ import { deleteTask } from "@/services/taskService";
 import { removeTaskFromStore } from "@/store/tasks";
 import { TimeBlock } from "@/models/timeBlock";
 import { useCalendarContext } from "@/context";
+import { handlePromise } from "@/utils/handleError";
+import { removeTimeBlockFromStore } from "@/store/timeBlocks";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
@@ -39,8 +41,22 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             id: "delete-task",
             label: "Delete Task",
             onSelect: async () => {
-                await deleteTask(task.id);
-                removeTaskFromStore(task.id);
+                const [response, error] = await handlePromise(
+                    deleteTask(task.id)
+                )
+                
+                if (error) {
+                    console.error(`[Task Block] Erorr deleting task. ${error}`);
+                    return;
+                }
+
+                if (response?.deletedTaskId) {
+                    removeTaskFromStore(response.deletedTaskId);
+                }
+
+                if (response?.deletedTimeBlockId) {
+                    removeTimeBlockFromStore(response.deletedTimeBlockId);
+                }
             },
         },
     ];

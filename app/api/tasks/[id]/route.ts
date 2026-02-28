@@ -120,16 +120,45 @@ export async function DELETE(
     if (!Number.isInteger(taskId) || taskId <= 0) {
         return new NextResponse(null, { status: 400 });
     }
+    
+    try {
+        const writes: Promise<unknown>[] = [];
+        let deletedTaskId: number | undefined;
+        let deletedTimeBlockId: number | undefined;
 
-    const tasks = await readJson<Task[]>(TASKS_FILE, []);
-    const index = tasks.findIndex((t) => t.id === taskId);
+        const tasks = await readJson<Task[]>(TASKS_FILE, []);
+        const timeBlocks = await readJson<TimeBlock[]>(TIME_BLOCKS_FILE, []);
+        const taskIndex = tasks.findIndex((t) => t.id === taskId);
 
-    if (index === -1) {
-        return new NextResponse(null, { status: 404 });
+        if (taskIndex === -1) {
+            return NextResponse.json(
+                { error: `Task not found. Unable to delete task. id [${taskId}]` },
+                { status: 404 }
+            );
+        }
+
+        deletedTaskId = taskId;
+        tasks.splice(taskIndex, 1);
+        writes.push(writeJson(TASKS_FILE, tasks));
+
+        const index = timeBlocks.findIndex(tb => tb.taskId === taskId);
+        if (index !== -1) {
+            deletedTimeBlockId = timeBlocks[index].id;
+            timeBlocks.splice(index, 1);
+            writes.push(writeJson(TIME_BLOCKS_FILE, timeBlocks));
+        }
+
+        await Promise.all(writes);
+
+        return NextResponse.json({
+            deletedTaskId,
+            deletedTimeBlockId,
+        });
+
+    } catch (err) {
+        return NextResponse.json(
+            { error: "Failed to update task" },
+            { status: 500 }
+        );
     }
-
-    tasks.splice(index, 1);
-    await writeJson(TASKS_FILE, tasks);
-
-    return new NextResponse(null, { status: 204 });
 }

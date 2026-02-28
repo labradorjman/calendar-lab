@@ -44,7 +44,6 @@ type CreateTaskResponse = {
     timeBlock: TimeBlock | null;
 };
 
-
 export async function createTask(request: CreateTaskRequest): Promise<CreateTaskResponse> {
     const res = await fetch("/api/tasks", {
         method: "POST",
@@ -61,10 +60,19 @@ export async function createTask(request: CreateTaskRequest): Promise<CreateTask
     return res.json();
 }
 
-export async function deleteTask(id: number) {
+type DeleteTaskResponse = {
+    deletedTaskId?: number;
+    deletedTimeBlockId?: number;
+}
+
+export async function deleteTask(id: number): Promise<DeleteTaskResponse> {
     const res = await fetch(`/api/tasks/${id}`, {
         method: "DELETE",
     });
 
-    if (!res.ok) throw new Error("Failed to delete task");
+    if (!res.ok) {
+        throw new Error("Failed to delete task");
+    }
+
+    return res.json();
 }

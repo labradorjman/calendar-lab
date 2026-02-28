@@ -24,6 +24,6 @@ export async function getNextId(type: CounterType): Promise<number> {
     const id = meta.counters[type];
     meta.counters[type]++;
 
-    writeJson(META_FILE, meta);
+    await writeJson(META_FILE, meta);
     return id;
 }

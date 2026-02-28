@@ -9,7 +9,7 @@ import { HEADER_HEIGHT, HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { HoveredColumnState, useTaskContext } from "@/taskContext";
-import { updateTask } from "@/services/tasks";
+import { updateTask } from "@/services/taskService";
 import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, unixToPostgresTimestamptz } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
 import useCalendarStore from "@/store";
@@ -21,7 +21,7 @@ import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuCont
 import { useCalendarContext } from "@/context";
 import WorkSessionBlock from "../WorkSession";
 import { dateToKey } from "@/utils/date";
-import { updateTimeBlock } from "@/services/timeBlocks";
+import { updateTimeBlock } from "@/services/timeBlockService";
 import { TimeBlock } from "@/models/timeBlock";
 
 interface DayColumnProps {
@@ -37,7 +37,8 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             id: "add-task",
             label: "Add Task",
             onSelect: () => {
-                calendarContext.openTaskModal({ 
+                calendarContext.openTaskModal({
+                    mode: "create",
                     startsAt: unixToPostgresTimestamptz(taskStartSeconds.current),
                 }
             )},
@@ -148,11 +149,12 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             }
 
             if (duration > 0) {
-                const taskId = taskContext.draggedTaskRef.current.id;
                 const taskStartUnix = calendarDate.startSeconds + hourTime.toSecondsSince();
                 const taskEndUnix = taskStartUnix + duration;
 
                 const hasOverlap = todayTimeBlocks.some(tb => {
+                    if (!tb.startsAt) return false;
+
                     const start = postgresTimestamptzToUnix(tb.startsAt);
                     const end = start + tb.duration;
 
@@ -164,6 +166,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                     return;
                 }
             }
+            
             const taskId = taskContext.draggedTaskRef.current!.id;
             const [timeBlock, timeBlockError] = await handlePromise(
                 updateTimeBlock(
@@ -183,17 +186,21 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                 )
             }
 
-            const [task, error] = await handlePromise(
-                updateTask(taskId, {isBacklogged: false})
+            const [response, error] = await handlePromise(
+                updateTask(taskId, {
+                    task: {
+                        isBacklogged: false
+                    }
+                })
             );
             
-            if (!task) {
+            if (!response) {
                 console.error(`Error updating task-{${taskId}}:`, error);
             } else {
                 updateTasks(prev => 
-                    prev.map(t => t.id === task.id ? task : t)
+                    prev.map(t => t.id === response.task.id ? response.task : t)
                 );
-                console.log("Dropped task:", task.id, "at column", date.toISOString(), "-- At time", hourTime.Time24);
+                console.log("Dropped task:", response.task.id, "at column", date.toISOString(), "-- At time", hourTime.Time24);
             }
         }
     }
@@ -213,6 +220,8 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             } else {
                 console.error(`Error mapping time block [${tb.id}]`);
             }
+
+            if (!tb.startsAt) continue;
 
             const unixStart = postgresTimestamptzToUnix(tb.startsAt);
             const unixEnd = unixStart + tb.duration;
@@ -298,11 +307,11 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                         {todayTimeBlocks.map(timeBlock => {
                             if (timeBlock.taskId) {
                                 const task = taskById.get(timeBlock.taskId);
+                                if (task?.isBacklogged || timeBlock.startsAt === null) return null;
+
                                 const startsAtLocalUnix =
                                     postgresTimestamptzToUnix(timeBlock.startsAt) +
                                     calendarDate.tzOffsetSeconds;
-
-                                if (task?.isBacklogged) return null;
                                 
                                 return (
                                     <TaskBlock

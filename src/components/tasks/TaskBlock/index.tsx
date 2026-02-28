@@ -9,9 +9,10 @@ import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { HEADER_HEIGHT } from "@/constants/column";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
-import { deleteTask } from "@/services/tasks";
+import { deleteTask } from "@/services/taskService";
 import { removeTaskFromStore } from "@/store/tasks";
 import { TimeBlock } from "@/models/timeBlock";
+import { useCalendarContext } from "@/context";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
@@ -21,12 +22,18 @@ interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export default function TaskBlock({ task, timeBlock, calendarDate, variant = "default", style, ...props }: TaskProps) {
+    const calendarContext = useCalendarContext();
+
     const { openContextMenu } = useContextMenu();
     const menuItems = [
         {
             id: "edit-task",
             label: "Edit Task",
-            onSelect: () => {},
+            onSelect: () => {calendarContext.openTaskModal({
+                mode: "edit",
+                task,
+                timeBlock,
+            })},
         },
         {
             id: "delete-task",
@@ -155,7 +162,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         },
     });
 
-    const startUnix = timeBlock
+    const startUnix = timeBlock?.startsAt
         ? postgresTimestamptzToUnix(timeBlock.startsAt)
         : null;
     const endUnix = timeBlock && timeBlock.duration > 0

@@ -27,6 +27,7 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
         const inputRef = useRef<HTMLInputElement>(null);
 
         function handleClear() {
+            setTime("");
             setTimeStr("");
             setMeridiem("AM");
         }
@@ -48,7 +49,6 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
         }, [time, meridiem]);
 
         useEffect(() => {
-
             if (!defaultValue || timeStr) return;
             
             setTimeStr(defaultValue.time12);

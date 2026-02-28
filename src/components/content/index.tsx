@@ -84,9 +84,42 @@ export default function Content() {
             <TaskModal
                 open={calendarContext.isTaskModalOpen}
                 onClose={calendarContext.closeTaskModal}
-                onTaskCreated={(data) => {
-                    updateTasks(prev => [...prev, data.task]);
-                    updateTimeBlocks(prev => [...prev, data.timeBlock]);
+                onTaskCreate={(data) => {
+                    if (data.task) {
+                        updateTasks(prev => [...prev, data.task!]);
+                    }
+
+                    if(data.timeBlock) {
+                        updateTimeBlocks(prev => [...prev, data.timeBlock!]);
+                    }
+                }}
+                onTaskUpdate={(data) => {
+                    console.log("data", data);
+                    if (data.task) {
+                        updateTasks(prev =>
+                            prev.map(t => t.id === data.task!.id ? data.task! : t)
+                        );
+                    }
+
+                    if (data.deletedTimeBlockId) {
+                        updateTimeBlocks(prev => 
+                            prev.filter(tb => tb.id !== data.deletedTimeBlockId)
+                        );
+                        return;
+                    }
+
+                    if (data.timeBlock) {
+                        updateTimeBlocks(prev => {
+                            const exists = prev.some(tb => tb.id === data.timeBlock!.id);
+                            
+                            if (exists) {
+                                return prev.map(tb =>
+                                    tb.id === data.timeBlock!.id ? data.timeBlock! : tb
+                                );
+                            }
+                            return [...prev, data.timeBlock!];
+                        });
+                    }
                 }}
             />
             <WorkSessionModal

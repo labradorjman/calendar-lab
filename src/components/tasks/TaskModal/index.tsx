@@ -3,11 +3,11 @@ import styles from "./TaskModal.module.scss";
 
 import { useEffect, useRef, useState } from "react";
 import Button from "@/ui/Button";
-import { createDefaultTask, type Task } from "@/models/task";
+import { createDefaultTask, isTaskEqual, type Task } from "@/models/task";
 
 import Checkbox from "@/ui/Checkbox";
 import { useCalendarContext } from "@/context";
-import { createTask, deleteTask } from "@/services/tasks";
+import { createTask, updateTask } from "@/services/taskService";
 import Modal, { ModalProps } from "@/components/Modal";
 import DateSelector from "@/ui/DateSelector";
 import TimeInput from "@/ui/TimeInput";
@@ -17,23 +17,30 @@ import { DATE_FORMAT, TIMEZONE } from "@/constants/calendar";
 import { ClearableHandle } from "@/types/componentHandles";
 import { ParsedDateParts } from "@/types/dateFormat";
 import { parseIsoDateParts } from "@/utils/dateParser";
-import { createTimeBlock } from "@/services/timeBlocks";
 import { TimeBlock } from "@/models/timeBlock";
-import { removeTaskFromStore } from "@/store/tasks";
+import { handlePromise } from "@/utils/handleError";
 
 interface TaskModalProps extends Omit<ModalProps, "children"> {
-    onTaskCreated: (data: {
-        task: Task;
-        timeBlock: TimeBlock;
+    onTaskCreate: (data: {
+        task?: Task;
+        timeBlock?: TimeBlock | null;
+    }) => void;
+    onTaskUpdate: (data: {
+        task?: Task;
+        timeBlock?: TimeBlock | null;
+        deletedTimeBlockId?: number;
     }) => void;
 }
 
-export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalProps) {
+export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, onTaskUpdate }: TaskModalProps) {
     const calendarContext = useCalendarContext();
 
     const [task, setTask] = useState<Omit<Task, "id">>(createDefaultTask);
     const [startsAt, setStartsAt] = useState<string | null>(null);
     const [durationMinutes, setDurationMinutes] = useState<number>(0);
+
+    const [isTaskEdited, setIsTaskEdited] = useState<boolean>(false);
+    const [isTimeBlockEdited, setIsTimeBlockEdited] = useState<boolean>(false);
 
     const [parsedDateParts, setParsedDateParts] = useState<ParsedDateParts | null>(null);
 
@@ -46,27 +53,54 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
     const isClearing = useRef<boolean>(false);
 
     useEffect(() => {
-        if (!open) return;
+        if (!open || !calendarContext.modalTask) return;
 
-        if (calendarContext.modalTask) {
-            setTask(prev => ({
-                ...prev,
-                ...calendarContext.modalTask,
-            }));
+        setTask(()=> ({
+            ...createDefaultTask(),
+            ...calendarContext.modalTask?.task,
+        }));
 
-            const startsAt = calendarContext.modalTask.startsAt;
-            if (startsAt) {
-                setParsedDateParts(parseIsoDateParts(startsAt, DATE_FORMAT));
-            }
+        const modal = calendarContext.modalTask;
+        if (!modal) return;
 
-            setDurationMinutes(() => {
-                const durationSeconds = calendarContext.modalTask?.duration;
-                if (!durationSeconds || durationSeconds === 0) return 0;
+        const modalStartsAt =
+            modal.mode === "edit"
+                ? modal.timeBlock?.startsAt
+                : modal.startsAt;
 
-                return Math.floor(durationSeconds / 60);
-            });
+        if (modalStartsAt) {
+            setParsedDateParts(parseIsoDateParts(modalStartsAt, DATE_FORMAT));
         }
+
+        setDurationMinutes(() => {
+            const durationSeconds =
+                modal.mode === "edit"
+                    ? modal.timeBlock?.duration
+                    : modal.duration;
+                    
+            if (!durationSeconds || durationSeconds === 0) return 0;
+
+            return Math.floor(durationSeconds / 60);
+        });
     }, [open]);
+
+    useEffect(() => {
+        const modal = calendarContext.modalTask;
+        if (!modal || modal.mode !== "edit" || !modal.task) return;
+
+        setIsTaskEdited(!isTaskEqual(modal.task, task));
+    }, [task, calendarContext.modalTask]);
+
+    useEffect(() => {
+        const modal = calendarContext.modalTask;
+        if (!modal || modal.mode !== "edit") return;
+
+        const isEdited =
+            modal.timeBlock?.startsAt !== startsAt ||
+            modal.timeBlock?.duration !== durationMinutes * 60;
+
+        setIsTimeBlockEdited(isEdited);
+    }, [startsAt, durationMinutes, calendarContext.modalTask]);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTask(prev => ({
@@ -106,37 +140,10 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
         }));
     }
 
-    const handleCreate = async () => {
-        let createdTask: Task | null = null;
-        const taskToCreate: Omit<Task, "id"> = {
-            ...task,
-            isBacklogged: !startsAt,
-            createdAt: new Date().toISOString(),
-        }
-
-        try {
-            createdTask = await createTask(taskToCreate);
-
-            const timeBlock = await createTimeBlock({
-                taskId: createdTask.id,
-                startsAt: startsAt!,
-                duration: durationMinutes * 60,
-            });
-            onTaskCreated({ task: createdTask, timeBlock });
-        }
-        catch (err) {
-            if(createdTask) {
-                await deleteTask(createdTask.id);
-                removeTaskFromStore(createdTask.id);
-            }
-            throw err;
-        }
-        onClose();
-    }
-
     const handleDateTimeChange = (element: "date" | "time") => {
         if (isClearing.current) {
             isClearing.current = false;
+
             if (element === "date") return;
         }
 
@@ -158,9 +165,85 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
     }
 
     const handleDateTimeClear = () => {
+        setParsedDateParts(null);
         isClearing.current = true;
         dateRef.current?.clear();
         timeRef.current?.clear();
+    }
+
+    const handleCreate = async () => {
+        const taskToCreate: Omit<Task, "id"> = {
+            ...task,
+            isBacklogged: !startsAt,
+            createdAt: new Date().toISOString(),
+        }
+
+        const timeBlockPayload = startsAt === null && durationMinutes === 0
+            ? null
+            : {
+                startsAt: startsAt,
+                duration: durationMinutes * 60,
+            }
+
+        const [response, error] = await handlePromise(
+            createTask({
+                task: taskToCreate,
+                timeBlock: timeBlockPayload,
+            })
+        );
+
+        if (error) {
+            console.error(`[Task Modal] Error creating task.`);
+            return;
+        } else {
+            onTaskCreate({
+                task: response?.task,
+                timeBlock: response?.timeBlock,
+            });
+        }
+
+        onClose();
+    }
+
+    const handleEdit = async () => {
+        const modal = calendarContext.modalTask;
+        if (!modal || modal.mode !== "edit") return;
+
+        const hasTimeBlock = startsAt !== null || durationMinutes !== 0;
+        const timeBlockPayload = modal.timeBlock
+            ? (startsAt === null && durationMinutes === 0
+                ? null
+                : {
+                    id: modal.timeBlock.id,
+                    startsAt: startsAt,
+                    duration: durationMinutes * 60,
+                })
+            : {
+                startsAt: startsAt,
+                duration: durationMinutes * 60,
+            };
+
+        const [response, error] = await handlePromise(
+            updateTask(modal.task.id, {
+                task: {
+                ...task,
+                ...(startsAt === null ? { isBacklogged: true } : {}),
+                },
+                timeBlock: timeBlockPayload,
+            })
+        );
+
+        if (error) {
+            console.error(`[Task Modal] Error editing task [${modal.task.id}]`);
+            return;
+        } else {
+            onTaskUpdate({
+                task: response?.task,
+                timeBlock: response?.timeBlock,
+                deletedTimeBlockId: response?.deletedTimeBlockId,
+            });
+        }
+        onClose();
     }
 
     return (
@@ -237,13 +320,28 @@ export default function TaskModal({ open, onClose, onTaskCreated }: TaskModalPro
                     />
                 </div>
                 <div className={styles.bottom}>
-                    <Button
-                        element="button"
-                        onClick={handleCreate}
-                        disabled={!task.name.trim()}
-                    >
-                        Create
-                    </Button>
+                    {calendarContext.modalTask?.mode === "create" && (
+                        <Button
+                            element="button"
+                            onClick={handleCreate}
+                            disabled={!task.name.trim()}
+                        >
+                            Create
+                        </Button>
+                    )}
+                    {calendarContext.modalTask?.mode === "edit" && (
+                        <Button
+                            element="button"
+                            onClick={handleEdit}
+                            disabled={
+                                !task.name.trim() ||
+                                (!isTaskEdited &&
+                                !isTimeBlockEdited)
+                            }
+                        >
+                            Edit
+                        </Button>
+                    )}
                 </div>
             </div>
         </Modal>

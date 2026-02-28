@@ -32,3 +32,28 @@ export function createDefaultTask(): Omit<Task, "id">{
         createdAt: new Date().toISOString(),
     };
 }
+
+function normalize(value: any) {
+    return value === null || value === "" ? null : value;
+}
+
+export function isTaskEqual(
+    a: Task | Omit<Task, "id">,
+    b: Task | Omit<Task, "id">
+): boolean {
+    return (
+        a.userId === b.userId &&
+        a.workSessionId === b.workSessionId &&
+        a.name === b.name &&
+        normalize(a.description) === normalize(b.description) &&
+        normalize(a.tag1Id) === normalize(b.tag1Id) &&
+        normalize(a.tag2Id) === normalize(b.tag2Id) &&
+        a.orderIndex === b.orderIndex &&
+        a.isImportant === b.isImportant &&
+        a.isBacklogged === b.isBacklogged &&
+        a.isCompleted === b.isCompleted &&
+        normalize(a.softDeadline) === normalize(b.softDeadline) &&
+        normalize(a.completedAt) === normalize(b.completedAt) &&
+        a.createdAt === b.createdAt
+    );
+}

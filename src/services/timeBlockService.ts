@@ -17,7 +17,7 @@ export async function createTimeBlock(data: Omit<TimeBlock, "id">): Promise<Time
     return timeBlock;
 }
 
-export async function updateTimeBlock(id: number, data: Partial<TimeBlock>): Promise<TimeBlock> {
+export async function updateTimeBlock(id: number, data: Partial<Omit <TimeBlock, "id">>): Promise<TimeBlock> {
     const res = await fetch(`/api/time-blocks/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

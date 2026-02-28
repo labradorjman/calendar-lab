@@ -8,13 +8,21 @@ import React, {
 } from "react";
 import { Task } from "@/models/task";
 import { WorkSession } from "./models/workSession";
+import { TimeBlock } from "./models/timeBlock";
 
-type TaskModalState = {
-    task?: Partial<Task>;
-    startsAt?: string;
-    duration?: number;
-}
-
+type TaskModalState =
+    | {
+        mode: "create";
+        task?: Partial<Omit<Task, "id">>;
+        startsAt?: string;
+        duration?: number;
+    }
+    | {
+        mode: "edit";
+        task: Task;
+        timeBlock?: TimeBlock;
+    };
+    
 type WorkSessionModalState = {
     session?: Partial<WorkSession>;
     startsAt?: string;
@@ -30,12 +38,12 @@ interface CalendarContextProps {
 
     isTaskModalOpen: boolean;
     modalTask: TaskModalState | null;
-    openTaskModal: (taskModalState?: TaskModalState) => void;
+    openTaskModal: (initialState?: TaskModalState) => void;
     closeTaskModal: () => void;
 
     isWorkSessionModalOpen: boolean;
     modalWorkSession: WorkSessionModalState | null;
-    openWorkSessionModal: (workSessionModalState?: WorkSessionModalState) => void;
+    openWorkSessionModal: (initialState?: WorkSessionModalState) => void;
     closeWorkSessionModal: () => void;
 }
 
@@ -72,8 +80,11 @@ export default function CalendarContextProvider({
     const [modalTask, setModalTask] =
         useState<TaskModalState | null>(null);
 
-    const openTaskModal = (data?: TaskModalState) => {
-        setModalTask(data ?? {});
+    const openTaskModal = (initialState?: TaskModalState) => {
+        setModalTask({
+            mode: "create",
+            ...initialState,
+        });
     };
 
     const closeTaskModal = () => {
@@ -83,8 +94,8 @@ export default function CalendarContextProvider({
     const [modalWorkSession, setModalWorkSession] =
         useState<WorkSessionModalState | null>(null);
 
-    const openWorkSessionModal = (data?: WorkSessionModalState) => {
-        setModalWorkSession(data ?? {});
+    const openWorkSessionModal = (initialState?: WorkSessionModalState) => {
+        setModalWorkSession(initialState ?? {});
     };
 
     const closeWorkSessionModal = () => {

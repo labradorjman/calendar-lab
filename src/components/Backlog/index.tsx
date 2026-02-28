@@ -7,13 +7,13 @@ import { Task } from "@/models/task";
 import TaskBlock from "@/components/tasks/TaskBlock";
 import SimpleBar from "simplebar-react";
 import { HoveredColumnState, useTaskContext } from "@/taskContext";
-import { updateTask } from "@/services/tasks";
+import { updateTask } from "@/services/taskService";
 import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
 import { WorkSession } from "@/models/workSession";
-import { deleteTimeBlock } from "@/services/timeBlocks";
+import { deleteTimeBlock } from "@/services/timeBlockService";
 import { TimeBlock } from "@/models/timeBlock";
 
 export default function Backlog() {
@@ -22,7 +22,7 @@ export default function Backlog() {
         {
             id: "add-task",
             label: "Add Task",
-            onSelect: () => {calendarContext.openTaskModal()},
+            onSelect: () => {calendarContext.openTaskModal({ mode: "create" })},
         },
     ];
 
@@ -73,19 +73,23 @@ export default function Backlog() {
         if (taskContext.draggedTaskRef.current) {
             const taskId = taskContext.draggedTaskRef.current!.id;
 
-            const [task, error] = await handlePromise(
-                updateTask(taskId, { isBacklogged: true })
+            const [response, error] = await handlePromise(
+                updateTask(taskId, {
+                    task: {
+                        isBacklogged: true
+                    }
+                })
             );
 
-            if (!task) {
+            if (!response) {
                 console.error(`Error updating task [${taskId}]:`, error);
                 return;
             }
 
             updateTasks(prev => 
-                prev.map(t => t.id === task.id ? task : t)
+                prev.map(t => t.id === response.task.id ? response.task : t)
             );
-            console.log("Dropped task:", task.id, "at column", "backlog-column");
+            console.log("Dropped task:", response.task.id, "at column", "backlog-column");
         }
     }
     const toKey = (type: "task" | "work_session", id: number | string) =>
@@ -122,7 +126,7 @@ export default function Backlog() {
                     element="button"
                     size="sm"
                     onClick={() => {
-                        calendarContext.openTaskModal();
+                        calendarContext.openTaskModal({ mode: "create" });
                     }}
                 >
                     +

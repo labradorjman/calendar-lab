@@ -2,11 +2,11 @@
 
 import Modal, { ModalProps } from "@/components/Modal";
 import styles from "./WorkSessionModal.module.scss";
-import { createDefaultWorkSession, WorkSession } from "@/models/workSession";
+import { createDefaultWorkSession, isTaskEqual, WorkSession } from "@/models/workSession";
 import Input from "@/ui/Input";
 import { useEffect, useRef, useState } from "react";
 import Button from "@/ui/Button";
-import { createWorkSession, deleteWorkSession } from "@/services/workSessionService";
+import { createWorkSession, deleteWorkSession, updateWorkSession } from "@/services/workSessionService";
 import { createTimeBlock } from "@/services/timeBlockService";
 import { removeWorkSessionFromStore } from "@/store/workSessions";
 import { useCalendarContext } from "@/context";
@@ -20,20 +20,31 @@ import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { DATE_FORMAT, TIMEZONE } from "@/constants/calendar";
 import { parseIsoDateParts } from "@/utils/dateParser";
 import ColorSelector from "@/ui/ColorSelector";
+import { handlePromise } from "@/utils/handleError";
+import { WORK_SESSION_MIN_DURATION_SECONDS } from "@/constants/limits";
 
 interface WorkSessionModalProps extends Omit<ModalProps, "children"> {
-    onWorkSessionCreated: (data: {
-        workSession: WorkSession;
-        timeBlock: TimeBlock;
+    onWorkSessionCreate: (data: {
+        workSession?: WorkSession;
+        timeBlock?: TimeBlock;
+    }) => void;
+
+    onWorkSessionUpdate: (data: {
+        workSession?: WorkSession;
+        timeBlock?: TimeBlock | null;
     }) => void;
 }
 
-export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}: WorkSessionModalProps) {
+export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: onWorkSessionCreate, onWorkSessionUpdate}: WorkSessionModalProps) {
     const calendarContext = useCalendarContext();
 
     const [workSession, setWorkSession] = useState<Omit<WorkSession, "id">>(createDefaultWorkSession);
     const [startsAt, setStartsAt] = useState<string | null>(null);
     const [durationMinutes, setDurationMinutes] = useState<number>(0);
+
+    const [isWorkSessionEdited, setIsWorkSessionEdited] = useState<boolean>(false);
+    const [isTimeBlockEdited, setIsTimeBlockEdited] = useState<boolean>(false);
+    const [isTimeBlockValid, setIsTimeBlockValid] = useState<boolean>(false);
 
     const [parsedDateParts, setParsedDateParts] = useState<ParsedDateParts | null>(null);
 
@@ -48,25 +59,65 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
     useEffect(() => {
         if (!open) return;
 
-        if (calendarContext.modalWorkSession) {
-            setWorkSession(prev => ({
-                ...prev,
-                ...calendarContext.modalWorkSession!.session ?? {},
-            }));
+        setWorkSession(() => ({
+            ...createDefaultWorkSession(),
+            ...calendarContext.modalWorkSession?.workSession,
+        }));
 
-            const startsAt = calendarContext.modalWorkSession?.startsAt;
-            if (startsAt) {
-                setParsedDateParts(parseIsoDateParts(startsAt, DATE_FORMAT));
-            }
+        const modal = calendarContext.modalWorkSession;
+        if (!modal) return;
 
-            setDurationMinutes(() => {
-                const durationSeconds = calendarContext.modalWorkSession?.duration;
-                if (!durationSeconds || durationSeconds === 0) return 0;
+        setIsTimeBlockValid(
+            modal.mode === "edit"
+                ? modal.timeBlock?.startsAt != null && (modal.timeBlock?.duration ?? 0) > 0
+                : startsAt != null && durationMinutes * 60 >= WORK_SESSION_MIN_DURATION_SECONDS
+        );
 
-                return Math.floor(durationSeconds / 60);
-            });
+        const modalStartsAt =
+            modal.mode === "edit"
+                ? modal.timeBlock?.startsAt
+                : modal.startsAt;
+
+        if (modalStartsAt) {
+            setParsedDateParts(parseIsoDateParts(modalStartsAt, DATE_FORMAT));
         }
+
+        setDurationMinutes(() => {
+            const durationSeconds =
+                modal.mode === "edit"
+                    ? modal.timeBlock?.duration
+                    : modal.duration;
+                    
+            if (!durationSeconds || durationSeconds === 0) return 0;
+
+            return Math.floor(durationSeconds / 60);
+        });
     }, [open]);
+
+    useEffect(() => {
+        const modal = calendarContext.modalWorkSession;
+        if (!modal || modal.mode !== "edit" || !modal.workSession) return;
+
+        setIsWorkSessionEdited(!isTaskEqual(modal.workSession, workSession));
+    }, [workSession, calendarContext.modalWorkSession]);
+
+    useEffect(() => {
+        const modal = calendarContext.modalWorkSession;
+        if (!modal) return;
+        
+        setIsTimeBlockValid(
+            startsAt != null &&
+            durationMinutes * 60 >= WORK_SESSION_MIN_DURATION_SECONDS
+        );
+
+        const isEdited =
+            modal.mode === "create"
+                ? true
+                : (modal.timeBlock?.startsAt !== startsAt ||
+                modal.timeBlock?.duration !== durationMinutes * 60);
+
+        setIsTimeBlockEdited(isEdited);
+    }, [startsAt, durationMinutes, calendarContext.modalWorkSession]);
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setWorkSession(prev => ({
@@ -74,27 +125,6 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
             name: e.target.value
         }));
     };
-
-    const handleCreate = async () => {
-        let session: WorkSession | null = null;
-        try {
-            session = await createWorkSession(workSession);
-
-            const timeBlock = await createTimeBlock({
-                workSessionId: session.id,
-                startsAt: startsAt!,
-                duration: durationMinutes * 60,
-            });
-            onWorkSessionCreated({ workSession: session, timeBlock });
-        } catch (err) {
-            if (session) {
-                await deleteWorkSession(session.id);
-                removeWorkSessionFromStore(session.id);
-            }
-            throw err;
-        }
-        onClose();
-    }
 
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.value === "") {
@@ -133,9 +163,61 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
     }
     
     const handleDateTimeClear = () => {
+        setParsedDateParts(null);
         isClearing.current = true;
         dateRef.current?.clear();
         timeRef.current?.clear();
+    }
+
+    const handleCreate = async () => {
+        const [response, error] = await handlePromise(
+            createWorkSession({
+                workSession,
+                timeBlock: {
+                    startsAt: startsAt!,
+                    duration: durationMinutes * 60,
+                },
+            })
+        );
+
+        if (error) {
+            console.error(`[Work session modal] Error creating work session.`);
+            return;
+        } else {
+            onWorkSessionCreate({
+                workSession: response?.workSession,
+                timeBlock: response?.timeBlock,
+            });
+        }
+        onClose();
+    }
+
+    const handleEdit = async () => {
+        const modal = calendarContext.modalWorkSession;
+        if (!modal || modal.mode !== "edit") return;
+
+
+        const [response, error] = await handlePromise(
+            updateWorkSession(modal.workSession.id, {
+                workSession,
+                timeBlock: {
+                    id: modal.timeBlock?.id,
+                    startsAt: startsAt!,
+                    duration: durationMinutes * 60,
+                },
+            })
+        );
+
+        if (error) {
+            console.error(`[Work session modal] Error editing work session [${modal.workSession.id}]`);
+            return;
+        } else {
+            onWorkSessionUpdate({
+                workSession: response?.workSession,
+                timeBlock: response?.timeBlock,
+            });
+        }
+        onClose();
     }
 
     return (
@@ -206,16 +288,29 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreated}:
                     </div>
                 </div>
                 <div className={styles.bottom}>
-                    <Button
-                        element="button"
-                        onClick={handleCreate}
-                        disabled={!workSession?.name.trim()
-                            || startsAt === null
-                            || durationMinutes === 0
-                        }
-                    >
-                        Create
-                    </Button>
+                    {calendarContext.modalWorkSession?.mode === "create" && (
+                        <Button
+                            element="button"
+                            onClick={handleCreate}
+                            disabled={!workSession.name.trim() || !isTimeBlockValid}
+                        >
+                            Create
+                        </Button>
+                    )}
+                    {calendarContext.modalWorkSession?.mode === "edit" && (
+                        <Button
+                            element="button"
+                            onClick={handleEdit}
+                            disabled={
+                                !workSession.name.trim() ||
+                                (!isWorkSessionEdited &&
+                                !isTimeBlockEdited &&
+                                !isTimeBlockValid)
+                            }
+                        >
+                            Edit
+                        </Button>
+                    )}
                 </div>
             </div>
         </Modal>

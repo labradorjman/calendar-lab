@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readJson, writeJson } from "@/utils/storage/file";
-import { TASKS_FILE, TIME_BLOCKS_FILE } from "@/constants/fileNames";
-import { Task } from "@/models/task";
+import { WORK_SESSIONS_FILE, TIME_BLOCKS_FILE } from "@/constants/fileNames";
+import { WorkSession } from "@/models/workSession";
 import { TimeBlock } from "@/models/timeBlock";
 import { getNextId } from "@/utils/storage/meta";
 
@@ -14,53 +14,43 @@ export async function PATCH(
 
     if (!Number.isInteger(id) || id <= 0) {
         return NextResponse.json(
-            { error: "[Task] Invalid id" },
+            { error: "[Work session] Invalid id" },
             { status: 400 }
         );
     }
 
     try {
         const body = await req.json();
-        const { task, timeBlock } = body;
+        const { workSession, timeBlock } = body;
 
-        const tasks = await readJson<Task[]>(TASKS_FILE, []);
+        const workSessions = await readJson<WorkSession[]>(WORK_SESSIONS_FILE, []);
         const timeBlocks = await readJson<TimeBlock[]>(TIME_BLOCKS_FILE, []);
 
-        const taskIndex = tasks.findIndex(t => t.id === id);
+        const workSessionIndex = workSessions.findIndex(ws => ws.id === id);
 
-        if (taskIndex === -1) {
+        if (workSessionIndex === -1) {
             return NextResponse.json(
-                { error: "[Task] Not found" },
+                { error: "[Work session] Not found" },
                 { status: 404 }
             );
         }
 
-        const updatedTask: Task = {
-            ...tasks[taskIndex],
-            ...(task ?? {}),
+        const updatedWorkSession: WorkSession = {
+            ...workSessions[workSessionIndex],
+            ...(workSession ?? {}),
             id,
         };
 
         let updatedTimeBlock: TimeBlock | null = null;
-        let deletedTimeBlockId: number | undefined;
 
-        if (timeBlock === null) {
-            // Delete timeBlock
-            const index = timeBlocks.findIndex(tb => tb.taskId === id);
-
-            if (index !== -1) {
-                deletedTimeBlockId = timeBlocks[index].id;
-                timeBlocks.splice(index, 1);
-            }
-        }
-        else if (timeBlock) {
+        if (timeBlock) {
             if (timeBlock.id) {
                 // Update an existing timeblock
                 const tbIndex = timeBlocks.findIndex(tb => tb.id === timeBlock.id);
 
                 if (tbIndex === -1) {
                     return NextResponse.json(
-                        { error: "[Task] Time block not found" },
+                        { error: "[Work session] Time block not found" },
                         { status: 404 }
                     );
                 }
@@ -68,7 +58,7 @@ export async function PATCH(
                 const newTimeBlock: TimeBlock = {
                     ...timeBlocks[tbIndex],
                     ...timeBlock,
-                    taskId: id,
+                    workSessionId: id,
                 };
 
                 timeBlocks[tbIndex] = newTimeBlock;
@@ -79,7 +69,7 @@ export async function PATCH(
 
                 updatedTimeBlock = {
                     id: newId,
-                    taskId: id,
+                    workSessionId: id,
                     startsAt: timeBlock.startsAt,
                     duration: timeBlock.duration,
                 };
@@ -88,21 +78,20 @@ export async function PATCH(
             }
         }
 
-        tasks[taskIndex] = updatedTask;
+        workSessions[workSessionIndex] = updatedWorkSession;
 
         await Promise.all([
-            writeJson(TASKS_FILE, tasks),
+            writeJson(WORK_SESSIONS_FILE, workSessions),
             writeJson(TIME_BLOCKS_FILE, timeBlocks),
         ]);
-
+        
         return NextResponse.json({
-            task: updatedTask,
+            workSession: updatedWorkSession,
             timeBlock: updatedTimeBlock,
-            ...(deletedTimeBlockId !== undefined && { deletedTimeBlockId }),
         });
     } catch (err) {
         return NextResponse.json(
-            { error: "Failed to update task" },
+            { error: "Failed to update work session" },
             { status: 500 }
         );
     }
@@ -113,33 +102,33 @@ export async function DELETE(
     { params }: { params: { id: string } }
 ) {
     const { id } = await params;
-    const taskId = Number(id);
+    const workSessionId = Number(id);
 
-    if (!Number.isInteger(taskId) || taskId <= 0) {
+    if (!Number.isInteger(workSessionId) || workSessionId <= 0) {
         return new NextResponse(null, { status: 400 });
     }
     
     try {
         const writes: Promise<unknown>[] = [];
-        let deletedTaskId: number | undefined;
+        let deletedWorkSessionId: number | undefined;
         let deletedTimeBlockId: number | undefined;
 
-        const tasks = await readJson<Task[]>(TASKS_FILE, []);
+        const workSessions = await readJson<WorkSession[]>(WORK_SESSIONS_FILE, []);
         const timeBlocks = await readJson<TimeBlock[]>(TIME_BLOCKS_FILE, []);
-        const taskIndex = tasks.findIndex((t) => t.id === taskId);
+        const workSessionIndex = workSessions.findIndex((t) => t.id === workSessionId);
 
-        if (taskIndex === -1) {
+        if (workSessionIndex === -1) {
             return NextResponse.json(
-                { error: `Task not found. Unable to delete task. id [${taskId}]` },
+                { error: `Work session not found. Unable to delete work session. id [${workSessionId}]` },
                 { status: 404 }
             );
         }
 
-        deletedTaskId = taskId;
-        tasks.splice(taskIndex, 1);
-        writes.push(writeJson(TASKS_FILE, tasks));
+        deletedWorkSessionId = workSessionId;
+        workSessions.splice(workSessionIndex, 1);
+        writes.push(writeJson(WORK_SESSIONS_FILE, workSessions));
 
-        const index = timeBlocks.findIndex(tb => tb.taskId === taskId);
+        const index = timeBlocks.findIndex(tb => tb.workSessionId === workSessionId);
         if (index !== -1) {
             deletedTimeBlockId = timeBlocks[index].id;
             timeBlocks.splice(index, 1);
@@ -149,13 +138,13 @@ export async function DELETE(
         await Promise.all(writes);
 
         return NextResponse.json({
-            deletedTaskId,
+            deletedWorkSessionId,
             deletedTimeBlockId,
         });
 
     } catch (err) {
         return NextResponse.json(
-            { error: "Failed to delete task" },
+            { error: "Failed to delete work session" },
             { status: 500 }
         );
     }

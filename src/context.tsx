@@ -23,10 +23,18 @@ type TaskModalState =
         timeBlock?: TimeBlock;
     };
     
-type WorkSessionModalState = {
-    session?: Partial<WorkSession>;
-    startsAt?: string;
-    duration?: number;
+type WorkSessionModalState =
+    | {
+        mode: "create";
+        workSession?: Partial<Omit<WorkSession, "id">>;
+        startsAt?: string;
+        duration?: number;
+    }
+    | {
+        mode: "edit";
+        workSession: WorkSession;
+        timeBlock?: TimeBlock;
+    }; {
 };
 
 interface CalendarContextProps {
@@ -95,7 +103,10 @@ export default function CalendarContextProvider({
         useState<WorkSessionModalState | null>(null);
 
     const openWorkSessionModal = (initialState?: WorkSessionModalState) => {
-        setModalWorkSession(initialState ?? {});
+        setModalWorkSession({
+            mode: "create",
+            ...initialState,
+        });
     };
 
     const closeWorkSessionModal = () => {

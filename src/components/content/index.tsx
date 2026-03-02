@@ -94,7 +94,6 @@ export default function Content() {
                     }
                 }}
                 onTaskUpdate={(data) => {
-                    console.log("data", data);
                     if (data.task) {
                         updateTasks(prev =>
                             prev.map(t => t.id === data.task!.id ? data.task! : t)
@@ -125,9 +124,27 @@ export default function Content() {
             <WorkSessionModal
                 open={calendarContext.isWorkSessionModalOpen}
                 onClose={calendarContext.closeWorkSessionModal}
-                onWorkSessionCreated={(data) => {
-                    updateWorkSessions(prev => [...prev, data.workSession]);
-                    updateTimeBlocks(prev => [...prev, data.timeBlock]);
+                onWorkSessionCreate={(data) => {
+                    if (data.workSession) {
+                        updateWorkSessions(prev => [...prev, data.workSession!]);
+                    }
+
+                    if (data.timeBlock) {
+                        updateTimeBlocks(prev => [...prev, data.timeBlock!]);
+                    }
+                }}
+                onWorkSessionUpdate={(data) => {
+                    if (data.workSession) {
+                        updateWorkSessions(prev =>
+                            prev.map(ws => ws.id === data.workSession!.id ? data.workSession! : ws)
+                        );
+                    }
+
+                    if (data.timeBlock) {
+                        updateTimeBlocks(prev =>
+                            prev.map(tb => tb.id === data.timeBlock!.id ? data.timeBlock! : tb)
+                        );
+                    }
                 }}
             />
         </>

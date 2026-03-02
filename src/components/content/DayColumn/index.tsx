@@ -15,7 +15,7 @@ import { HourTime } from "@/utils/Time/HourTime";
 import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
 import TaskBlock from "@/components/tasks/TaskBlock";
-import { TASK_MIN_DURATION_SECONDS } from "@/constants/taskLimits";
+import { TASK_MIN_DURATION_SECONDS } from "@/constants/limits";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
@@ -48,6 +48,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             label: "Create Work Session",
             onSelect: () => {
                 calendarContext.openWorkSessionModal({
+                    mode: "create",
                     startsAt: unixToPostgresTimestamptz(taskStartSeconds.current),
                 });
             },
@@ -334,9 +335,9 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                             );
 
                             } else if (timeBlock.workSessionId) {
-                                const workSession = workSessions.find(session => session.id === timeBlock.workSessionId);
+                                const workSession = workSessions.find(ws => ws.id === timeBlock.workSessionId);;
                                 if (!workSession) {
-                                    console.error("Could not find work session linked to a timeblock with id:", timeBlock.id);
+                                    console.error(`Could not find work session [${timeBlock.workSessionId}] linked to a timeblock with [${timeBlock.id}]`);
                                     return null;
                                 }
 

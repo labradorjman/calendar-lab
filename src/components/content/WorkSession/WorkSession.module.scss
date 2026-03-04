@@ -2,6 +2,7 @@
     width: 100%;
     height: 100%;
     border-radius: var(--gap_xsmall);
+    background: var(--session-bg);
 
     padding: var(--gap_xsmall);
     box-sizing: border-box;
@@ -11,4 +12,8 @@
     
     display: flex;
     flex-direction: column;
+    
+    &.hovered {
+        background: color-mix(in srgb, var(--session-bg), white 3%);
+    }
 }

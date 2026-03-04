@@ -9,10 +9,8 @@ import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import TimeColumn from "./TimeColumn";
 import TaskModal from "@/components/tasks/TaskModal";
 import useCalendarStore from "@/store";
-import { Task } from "@/models/task";
-import { dateToKey } from "@/utils/date";
+import { dateToKey } from "@/utils/objectToKey";
 import WorkSessionModal from "../workSessions/WorkSessionModal";
-import { WorkSession } from "@/models/workSession";
 
 const TIME_COLUMN_NAME = "time_column";
 

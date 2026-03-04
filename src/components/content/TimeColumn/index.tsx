@@ -86,7 +86,7 @@ export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnP
         if (!taskContext.subscribeHoveredColumn) return;
 
         const unsubscribe = taskContext.subscribeHoveredColumn(state => {
-            const isDayColumn = state.columnId?.startsWith("date:");
+            const isDayColumn = state.hoverId?.startsWith("date:");
             setShowAlignment(!!isDayColumn);
 
             if (!isDayColumn) return;

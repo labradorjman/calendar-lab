@@ -4,7 +4,7 @@ import React, { createContext, useContext, useRef } from "react";
 import { Task } from "@/models/task";
 
 export interface HoveredColumnState {
-    columnId: string | null;
+    hoverId: string | null;
     columnRight: number | null;
     topOffset: number | null;
     columnContentTop: number | null;
@@ -38,7 +38,7 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
 
     // Hovered state ref
     const hoveredColumnState = useRef<HoveredColumnState>({
-        columnId: null,
+        hoverId: null,
         columnRight: null,
         topOffset: null,
         columnContentTop: null,

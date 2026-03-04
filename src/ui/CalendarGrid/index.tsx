@@ -6,7 +6,7 @@ import { forwardRef, useEffect, useState } from "react";
 import CalendarCell from "@/ui/CalendarCell";
 import { useCalendarContext } from "@/context";
 import { YearMonthState } from "@/types/yearMonthState";
-import { dateToKey } from "@/utils/date";
+import { dateToKey } from "@/utils/objectToKey";
 import { buildMonthDates } from "@/utils/weekBuilder";
 import { getNextDates } from "@/utils/days";
 

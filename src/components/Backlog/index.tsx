@@ -68,7 +68,7 @@ export default function Backlog() {
     }, [taskContext]);
 
     const handleDrop = async (state: HoveredColumnState) => {
-        if (state.columnId !== "backlog-column") return;
+        if (state.hoverId !== "backlog-column") return;
 
         if (taskContext.draggedTaskRef.current) {
             const taskId = taskContext.draggedTaskRef.current!.id;
@@ -134,7 +134,7 @@ export default function Backlog() {
             </div>
             <div
                 className={styles.task_area}
-                data-column={"backlog-column"}
+                data-hover-id={"backlog-column"}
                 onContextMenu={(e) => {
                     e.preventDefault();
                     e.stopPropagation();

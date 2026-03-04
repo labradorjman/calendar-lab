@@ -66,15 +66,15 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
 
     const tzOffsetSeconds = calendarDate?.tzOffsetSeconds ?? 0;
     const taskRef = useRef<HTMLDivElement>(null);
-    const columnsRef = useRef<NodeListOf<HTMLElement> | null>(null);
-    const columnRectsRef = useRef<
+    const hoverablesRef = useRef<NodeListOf<HTMLElement> | null>(null);
+    const hoverableRectsRef = useRef<
         { id: string; rect: DOMRect }[]
     >([]);
 
     let placeholder: HTMLElement | null = null;
     let cursorOffsetTop: number = 0;
     let hoverState: HoveredColumnState = {
-        columnId: null,
+        hoverId: null,
         columnRight: null,
         topOffset: null,
         columnContentTop: null,
@@ -85,14 +85,14 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             if (!taskRef.current) return;
             if (taskContext.draggedTaskRef.current) return;
 
-            columnRectsRef.current = Array.from(
-                document.querySelectorAll<HTMLElement>("[data-column]")
+            hoverableRectsRef.current = Array.from(
+                document.querySelectorAll<HTMLElement>("[data-hover-id]")
             ).map(element => ({
-                id: element.dataset.column!,
+                id: element.dataset.hoverId!,
                 rect: element.getBoundingClientRect(),
             }));
 
-            columnsRef.current = document.querySelectorAll("[data-column]");
+            hoverablesRef.current = document.querySelectorAll("[data-hover-id]");
             taskContext.draggedTaskRef.current = task;
             const rect = taskRef.current.getBoundingClientRect();
 
@@ -117,14 +117,11 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
 
             placeholder.style.transform = `translate(${dx}px, ${dy}px)`;
 
-            let nextState: HoveredColumnState = {
-                columnId: null,
-                columnRight: null,
-                topOffset: null,
-                columnContentTop: null,
-            };
-
-            columnRectsRef.current.forEach(({ id, rect}) => {
+            // Preferred match refers to the work session overlapping the day column bounding rect
+            let preferredMatch: HoveredColumnState | null = null;
+            let fallbackMatch: HoveredColumnState | null = null;
+            
+            hoverableRectsRef.current.forEach(({ id, rect}) => {
                 if (
                     pointerX >= rect.left &&
                     pointerX <= rect.right &&
@@ -134,23 +131,39 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                     const scrollElement = scrollContext.get(id)?.getScrollElement();
                     const scrollTop = scrollElement?.scrollTop ?? 0;
 
-                    const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
-                    const localTop = screenTop - HEADER_HEIGHT + scrollTop;
-                    nextState = {
-                        columnId: id,
-                        columnRight: rect.left + rect.width,
-                        topOffset: screenTop,
-                        columnContentTop: localTop,
-                    };
+                    if (rect.bottom > HEADER_HEIGHT) {
+                        const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
+                        const localTop = screenTop - HEADER_HEIGHT + scrollTop;
+
+                        const match = {
+                            hoverId: id,
+                            columnRight: rect.left + rect.width,
+                            topOffset: screenTop,
+                            columnContentTop: localTop,
+                        };
+
+                        if (id.startsWith("ws-")) {
+                            preferredMatch = match;
+                        } else {
+                            fallbackMatch = match;
+                        }
+                    }
                 }
-            })
-            // console.log("Top offset:", nextState.topOffset, "Column content top:", nextState.columnContentTop);
+            });
+
+            const nextState = preferredMatch ?? fallbackMatch ?? {
+                hoverId: null,
+                columnRight: null,
+                topOffset: null,
+                columnContentTop: null,
+            };
+
             hoverState = nextState;
             taskContext.setHoveredColumn(nextState);
         },
         onDragEnd: () => {
             taskContext.setHoveredColumn({
-                columnId: null,
+                hoverId: null,
                 columnRight: null,
                 topOffset: null,
                 columnContentTop: null,
@@ -160,7 +173,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             taskContext.draggedTaskRef.current = null;
 
             hoverState = {
-                columnId: null,
+                hoverId: null,
                 columnRight: null,
                 topOffset: null,
                 columnContentTop: null,

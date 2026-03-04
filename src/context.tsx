@@ -37,12 +37,21 @@ type WorkSessionModalState =
     }; {
 };
 
+type WorkSessionState = {
+    workSession: WorkSession;
+    timeBlock: TimeBlock;
+    tasks: Task[];
+}
+
 interface CalendarContextProps {
     selectedDate: Date;
     setSelectedDate: Dispatch<SetStateAction<Date>>;
 
     dateRange: Date[];
     setDateRange: Dispatch<SetStateAction<Date[]>>;
+
+    workSessionSelection: WorkSessionState | null;
+    setWorkSessionSelection: Dispatch<SetStateAction<WorkSessionState | null>>;
 
     isTaskModalOpen: boolean;
     modalTask: TaskModalState | null;
@@ -84,6 +93,8 @@ export default function CalendarContextProvider({
     const [selectedDate, setSelectedDate] = useState<Date>(initialSelectedDate);
     const [dateRange, setDateRange] = useState<Date[]>(initialDateRange);
 
+    const [workSessionSelection, setWorkSessionSelection] = useState<WorkSessionState | null>(null);
+
     // Task modal
     const [modalTask, setModalTask] =
         useState<TaskModalState | null>(null);
@@ -119,6 +130,8 @@ export default function CalendarContextProvider({
             setSelectedDate,
             dateRange,
             setDateRange,
+            workSessionSelection,
+            setWorkSessionSelection,
             modalTask,
             isTaskModalOpen: modalTask !== null,
             openTaskModal,

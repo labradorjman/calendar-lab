@@ -66,10 +66,15 @@
                 #1e2332
             );
             flex: 1;
+        }
 
-            &.hovered {
-                opacity: 0.75;
-            }
+        .task_container.hovered:after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: inherit;
+            pointer-events: none;
         }
     }
 }

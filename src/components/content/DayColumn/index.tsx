@@ -20,9 +20,11 @@ import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
 import WorkSessionBlock from "../WorkSession";
-import { dateToKey } from "@/utils/date";
+import { dateToKey } from "@/utils/objectToKey";
 import { updateTimeBlock } from "@/services/timeBlockService";
 import { TimeBlock } from "@/models/timeBlock";
+import { Task } from "@/models/task";
+import { WorkSession } from "@/models/workSession";
 
 interface DayColumnProps {
     date: Date;
@@ -115,7 +117,8 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         if (!taskContext.subscribeHoveredColumn) return;
 
         return taskContext.subscribeHoveredColumn(state => {
-            hoveredRef.current = state.columnId === dateToKey(date);
+            console.log("state", state.hoverId);
+            hoveredRef.current = state.hoverId === dateToKey(date);
 
             taskContainerRef.current?.classList.toggle(
                 styles.hovered,
@@ -133,7 +136,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     }, [taskContext, date]);
 
     const handleTaskDrop = async (state: HoveredColumnState) => {
-        if (state.columnId !== dateToKey(date)) return;
+        if (state.hoverId !== dateToKey(date)) return;
 
         if (taskContext.draggedTaskRef.current) {
             const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
@@ -242,10 +245,32 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         };
     }, [timeBlocks]);
 
-    const { taskById, workSessionById } = useMemo(() => ({
-        taskById: new Map(tasks.map(t => [t.id, t])),
-        workSessionById: new Map(workSessions.map(w => [w.id, w])),
-    }), [tasks, workSessions]);
+    const { taskById, workSessionById, tasksByWorkSessionId } = useMemo(() => {
+        const taskMap = new Map<number, Task>();
+        const workSessionMap = new Map<number, WorkSession>();
+        const groupedTasks = new Map<number, Task[]>();
+
+        for (const task of tasks) {
+            taskMap.set(task.id, task);
+
+            if (task.workSessionId) {
+                if (!groupedTasks.has(task.workSessionId)) {
+                    groupedTasks.set(task.workSessionId, []);
+                }
+                groupedTasks.get(task.workSessionId)!.push(task);
+            }
+        }
+
+        for (const ws of workSessions) {
+            workSessionMap.set(ws.id, ws);
+        }
+
+        return {
+            taskById: taskMap,
+            workSessionById: workSessionMap,
+            tasksByWorkSessionId: groupedTasks,
+        };
+    }, [tasks, workSessions]);
 
     const getScrollTop = useCallback(() => {
         return (
@@ -302,11 +327,13 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                     <div
                         ref={taskContainerRef}
                         className={styles.task_container}
-                        data-column={dateToKey(date)}
+                        data-hover-id={dateToKey(date)}
                         style={{ height: taskContainerHeight }}
                     >
                         {todayTimeBlocks.map(timeBlock => {
                             if (timeBlock.taskId) {
+                                if (tasks.length === 0) return;
+
                                 const task = taskById.get(timeBlock.taskId);
                                 if (task?.isBacklogged || timeBlock.startsAt === null) return null;
 
@@ -333,19 +360,41 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                                         }}
                                     />
                             );
-
                             } else if (timeBlock.workSessionId) {
-                                const workSession = workSessions.find(ws => ws.id === timeBlock.workSessionId);;
+                                if (workSessions.length === 0) return;
+
+                                const workSession = workSessions.find(ws => ws.id === timeBlock.workSessionId);
                                 if (!workSession) {
                                     console.error(`Could not find work session [${timeBlock.workSessionId}] linked to a timeblock with [${timeBlock.id}]`);
                                     return null;
                                 }
+
+                                if (timeBlock.startsAt == null) {
+                                    console.error(`Work session [${workSession.id}] must have a valid timeblock. Error: The timeblock associated with the work session has not start time defined.`);
+                                    return;
+                                }
+
+                                const startsAtLocalUnix =
+                                    postgresTimestamptzToUnix(timeBlock.startsAt) +
+                                    calendarDate.tzOffsetSeconds;
 
                                 return (
                                     <WorkSessionBlock
                                         key={timeBlock.id}
                                         workSession={workSession}
                                         timeBlock={timeBlock}
+                                        tasks={tasksByWorkSessionId.get(workSession.id) ?? []}
+                                        style={{
+                                            position: "absolute",
+                                            top: `${secondsToOffset(
+                                                startsAtLocalUnix -
+                                                    calendarDate.startLocalSeconds
+                                            )}px`,
+                                            height:
+                                                timeBlock.duration !== 0
+                                                    ? `${(HOUR_HEIGHT / 60) * (timeBlock.duration / 60)}px`
+                                                    : "auto",
+                                        }}
                                     />
                                 );
                             }

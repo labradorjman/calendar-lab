@@ -22,10 +22,6 @@ export function createUtcDate(
     return new Date(Date.UTC(year, month, day, hours, minutes, seconds, ms));
 }
 
-export function dateToKey (date: Date) {
-    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
-}
-
 export function getDateString(year: number, month: number, date: number): string {
     return `${year}-${month.toString().padStart(2, "0")}-${date.toString().padStart(2, "0")}`;
 }

@@ -93,7 +93,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             }));
 
             hoverablesRef.current = document.querySelectorAll("[data-hover-id]");
-            taskContext.draggedTaskRef.current = task;
+            taskContext.draggedTaskRef.current = { task, timeBlock }
             const rect = taskRef.current.getBoundingClientRect();
 
             placeholder = taskRef.current.cloneNode(true) as HTMLElement;

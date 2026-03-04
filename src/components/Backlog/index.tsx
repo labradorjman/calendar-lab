@@ -13,7 +13,6 @@ import { handlePromise } from "@/utils/handleError";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
 import { WorkSession } from "@/models/workSession";
-import { deleteTimeBlock } from "@/services/timeBlockService";
 import { TimeBlock } from "@/models/timeBlock";
 
 export default function Backlog() {
@@ -71,13 +70,17 @@ export default function Backlog() {
         if (state.hoverId !== "backlog-column") return;
 
         if (taskContext.draggedTaskRef.current) {
-            const taskId = taskContext.draggedTaskRef.current!.id;
+            const taskId = taskContext.draggedTaskRef.current!.task.id;
+            const timeBlockId = taskContext.draggedTaskRef.current!.timeBlock?.id;
 
             const [response, error] = await handlePromise(
                 updateTask(taskId, {
                     task: {
                         isBacklogged: true
-                    }
+                    },
+                    ...(timeBlockId
+                        ? { timeBlock: { id: timeBlockId, startsAt: null } }
+                        : {})
                 })
             );
 

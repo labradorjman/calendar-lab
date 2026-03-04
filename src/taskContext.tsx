@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useRef } from "react";
 import { Task } from "@/models/task";
+import { TimeBlock } from "./models/timeBlock";
 
 export interface HoveredColumnState {
     hoverId: string | null;
@@ -11,7 +12,7 @@ export interface HoveredColumnState {
 }
 
 interface TaskContextProps {
-    draggedTaskRef: React.RefObject<Task | null>;
+    draggedTaskRef: React.RefObject<{ task: Task; timeBlock?: TimeBlock } | null>;
     hoveredColumnState: React.RefObject<HoveredColumnState>;
     setHoveredColumn: (columnState: Partial<HoveredColumnState>) => void;
     subscribeHoveredColumn?: (callback: (columnState: HoveredColumnState) => void) => () => void;
@@ -34,7 +35,7 @@ export function useTaskContext() {
 }
 
 export default function TaskContextProvider({ children }: TaskContextProviderProps) {
-    const draggedTaskRef = useRef<Task | null>(null);
+    const draggedTaskRef = useRef<{ task: Task; timeBlock?: TimeBlock } | null>(null);
 
     // Hovered state ref
     const hoveredColumnState = useRef<HoveredColumnState>({

@@ -179,10 +179,14 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         if (state.hoverId !== dateToKey(date)) return;
 
         if (taskContext.draggedTaskRef.current) {
+            const taskId = taskContext.draggedTaskRef.current!.task.id;
+            
             const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
             const hourTime = new HourTime(hour24, minute);
 
-            const taskTimeBlock = timeBlocksRef.current.find(tb => tb.taskId === taskContext.draggedTaskRef.current!.id);
+            const taskTimeBlock = timeBlocksRef.current.find(tb =>
+                tb.taskId === taskContext.draggedTaskRef.current!.task.id
+            );
             const duration = taskTimeBlock?.duration ?? 0;
             if (duration === 0 || duration < TASK_MIN_DURATION_SECONDS) {
                 console.log("--- Task must be 15 minutes long");
@@ -193,7 +197,6 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             }
 
             if (duration > 0) {
-                const taskId = taskContext.draggedTaskRef.current!.id;
                 const taskStartUnix = calendarDate.startSeconds + hourTime.toSecondsSince();
                 const taskEndUnix = taskStartUnix + duration;
 
@@ -212,7 +215,6 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                 }
             }
             
-            const taskId = taskContext.draggedTaskRef.current!.id;
             const [timeBlock, timeBlockError] = await handlePromise(
                 updateTimeBlock(
                     taskTimeBlock!.id,

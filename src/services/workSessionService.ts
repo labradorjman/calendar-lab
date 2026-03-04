@@ -3,11 +3,11 @@ import { WorkSession } from "@/models/workSession";
 
 type UpdateWorkSessionRequest = {
     workSession?: Partial<WorkSession>;
-    timeBlock?: {
+    timeBlock?: Partial<{
         id?: number;
         startsAt: string | null;
         duration: number;
-    } | null;
+    }> | null;
 };
 
 type UpdateWorkSessionResponse = {

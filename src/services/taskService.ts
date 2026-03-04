@@ -3,11 +3,11 @@ import { TimeBlock } from "@/models/timeBlock";
 
 type UpdateTaskRequest = {
     task?: Partial<Task>;
-    timeBlock?: {
+    timeBlock?: Partial<{
         id?: number;
         startsAt: string | null;
         duration: number;
-    } | null;
+    }> | null;
 };
 
 type UpdateTaskResponse = {

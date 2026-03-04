@@ -84,11 +84,52 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         setTaskContainerHeight(24 * HOUR_HEIGHT);
     }, []);
     
+    const todayTimeBlocksRef = useRef<TimeBlock[]>([]);
     const timeBlocksRef = useRef(timeBlocks);
 
     useEffect(() => {
         timeBlocksRef.current = timeBlocks;
     }, [timeBlocks]);
+
+    const toKey = (type: "task" | "work_session", id: number | string) =>
+        `${type}-${id}`;
+    
+     const { timeBlockByKey, todayTimeBlocks } = useMemo(() => {
+        const map = new Map<string, TimeBlock>();
+        const today: TimeBlock[] = [];
+
+        for (const tb of timeBlocks) {
+            if (tb.taskId) {
+                map.set(toKey("task", tb.taskId), tb);
+            } else if (tb.workSessionId) {
+                map.set(toKey("work_session", tb.workSessionId), tb);
+            } else {
+                console.error(`Error mapping time block [${tb.id}]`);
+            }
+
+            if (!tb.startsAt) continue;
+
+            const unixStart = postgresTimestamptzToUnix(tb.startsAt);
+            const unixEnd = unixStart + tb.duration;
+
+            if ((unixStart >= calendarDate.startSeconds &&
+                unixStart < calendarDate.endSeconds) || 
+                (unixEnd > calendarDate.startSeconds &&
+                unixEnd < calendarDate.endSeconds)
+            ) {
+                today.push(tb);
+            }
+        }
+
+        return {
+            timeBlockByKey: map,
+            todayTimeBlocks: today,
+        };
+    }, [timeBlocks]);
+
+    useEffect(() => {
+        todayTimeBlocksRef.current = todayTimeBlocks;
+    }, [todayTimeBlocks]);
 
     const scrollContext = useScrollSyncContext();
     const taskContainerRef = useRef<HTMLDivElement>(null);
@@ -117,7 +158,6 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         if (!taskContext.subscribeHoveredColumn) return;
 
         return taskContext.subscribeHoveredColumn(state => {
-            console.log("state", state.hoverId);
             hoveredRef.current = state.hoverId === dateToKey(date);
 
             taskContainerRef.current?.classList.toggle(
@@ -153,11 +193,12 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             }
 
             if (duration > 0) {
+                const taskId = taskContext.draggedTaskRef.current!.id;
                 const taskStartUnix = calendarDate.startSeconds + hourTime.toSecondsSince();
                 const taskEndUnix = taskStartUnix + duration;
 
-                const hasOverlap = todayTimeBlocks.some(tb => {
-                    if (!tb.startsAt) return false;
+                const hasOverlap = todayTimeBlocksRef.current.some(tb => {
+                    if (!tb.startsAt || tb.taskId === taskId) return false;
 
                     const start = postgresTimestamptzToUnix(tb.startsAt);
                     const end = start + tb.duration;
@@ -208,42 +249,6 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             }
         }
     }
-
-    const toKey = (type: "task" | "work_session", id: number | string) =>
-        `${type}-${id}`;
-
-    const { timeBlockByKey, todayTimeBlocks } = useMemo(() => {
-        const map = new Map<string, TimeBlock>();
-        const today: TimeBlock[] = [];
-
-        for (const tb of timeBlocks) {
-            if (tb.taskId) {
-                map.set(toKey("task", tb.taskId), tb);
-            } else if (tb.workSessionId) {
-                map.set(toKey("work_session", tb.workSessionId), tb);
-            } else {
-                console.error(`Error mapping time block [${tb.id}]`);
-            }
-
-            if (!tb.startsAt) continue;
-
-            const unixStart = postgresTimestamptzToUnix(tb.startsAt);
-            const unixEnd = unixStart + tb.duration;
-
-            if ((unixStart >= calendarDate.startSeconds &&
-                unixStart < calendarDate.endSeconds) || 
-                (unixEnd > calendarDate.startSeconds &&
-                unixEnd < calendarDate.endSeconds)
-            ) {
-                today.push(tb);
-            }
-        }
-
-        return {
-            timeBlockByKey: map,
-            todayTimeBlocks: today,
-        };
-    }, [timeBlocks]);
 
     const { taskById, workSessionById, tasksByWorkSessionId } = useMemo(() => {
         const taskMap = new Map<number, Task>();

@@ -70,4 +70,14 @@ export class HourTime {
     static from12Hour(hour12: number, minute: number, suffix: Meridiem): HourTime {
         return new HourTime(hour12, minute, suffix);
     }
+
+    addMinutes(minutes: number): HourTime {
+        const totalMinutes = this.hour24 * 60 + this.minute + minutes;
+        const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+
+        const hour = Math.floor(normalized / 60);
+        const minute = normalized % 60;
+
+        return new HourTime(hour, minute);
+    }
 }

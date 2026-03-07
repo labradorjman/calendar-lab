@@ -5,12 +5,12 @@ import styles from "@/components/content/DayColumn/DayColumn.module.scss";
 import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
 import { TIMEZONE, WEEK_DAYS } from "@/constants/calendar";
-import { HEADER_HEIGHT, HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
+import { HEADER_HEIGHT, HOUR_HEIGHT } from "@/constants/column";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
-import { HoveredColumnState, useTaskContext } from "@/taskContext";
+import { TaskDragState, useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/taskService";
-import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, unixToPostgresTimestamptz } from "@/utils/time";
+import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, secondsToOffset, unixToPostgresTimestamptz } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
 import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
@@ -21,10 +21,11 @@ import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuCont
 import { useCalendarContext } from "@/context";
 import WorkSessionBlock from "../WorkSession";
 import { dateToKey } from "@/utils/objectToKey";
-import { updateTimeBlock } from "@/services/timeBlockService";
 import { TimeBlock } from "@/models/timeBlock";
 import { Task } from "@/models/task";
 import { WorkSession } from "@/models/workSession";
+import { useTimeBlockContext } from "@/timeBlockContext";
+import TaskSkeleton from "@/components/tasks/TaskSkeleton";
 
 interface DayColumnProps {
     date: Date;
@@ -57,13 +58,15 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         },
     ];
 
-    const [workSessions] = useCalendarStore("work_sessions");
-    const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
-
     const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
 
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
+
+    const [workSessions] = useCalendarStore("work_sessions");
+
+    const timeBlockContext = useTimeBlockContext();
+    const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     const calendarContext = useCalendarContext();
     const taskStartSeconds = useRef<number>(0);
@@ -71,7 +74,8 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     const headerRef = useRef<HTMLDivElement>(null);
     const [headerHeight, setHeaderHeight] = useState<number>(0);
 
-    const hoveredRef = useRef(false);
+    const showSkeletonRef = useRef<boolean>(false);
+    const hoveredRef = useRef<boolean>(false);
     const [contentHeight, setContentHeight] = useState<number>(0);
     const [taskContainerHeight, setTaskContainerHeight] = useState<number>(0);
 
@@ -84,29 +88,10 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         setTaskContainerHeight(24 * HOUR_HEIGHT);
     }, []);
     
-    const todayTimeBlocksRef = useRef<TimeBlock[]>([]);
-    const timeBlocksRef = useRef(timeBlocks);
-
-    useEffect(() => {
-        timeBlocksRef.current = timeBlocks;
-    }, [timeBlocks]);
-
-    const toKey = (type: "task" | "work_session", id: number | string) =>
-        `${type}-${id}`;
-    
-     const { timeBlockByKey, todayTimeBlocks } = useMemo(() => {
-        const map = new Map<string, TimeBlock>();
+     const { todayTimeBlocks } = useMemo(() => {
         const today: TimeBlock[] = [];
 
         for (const tb of timeBlocks) {
-            if (tb.taskId) {
-                map.set(toKey("task", tb.taskId), tb);
-            } else if (tb.workSessionId) {
-                map.set(toKey("work_session", tb.workSessionId), tb);
-            } else {
-                console.error(`Error mapping time block [${tb.id}]`);
-            }
-
             if (!tb.startsAt) continue;
 
             const unixStart = postgresTimestamptzToUnix(tb.startsAt);
@@ -121,15 +106,8 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
             }
         }
 
-        return {
-            timeBlockByKey: map,
-            todayTimeBlocks: today,
-        };
+        return { todayTimeBlocks: today };
     }, [timeBlocks]);
-
-    useEffect(() => {
-        todayTimeBlocksRef.current = todayTimeBlocks;
-    }, [todayTimeBlocks]);
 
     const scrollContext = useScrollSyncContext();
     const taskContainerRef = useRef<HTMLDivElement>(null);
@@ -155,38 +133,38 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     }, []);
 
     useEffect(() => {
-        if (!taskContext.subscribeHoveredColumn) return;
+        if (!taskContext.subscribeTaskDrag) return;
 
-        return taskContext.subscribeHoveredColumn(state => {
-            hoveredRef.current = state.hoverId === dateToKey(date);
+        return taskContext.subscribeTaskDrag(state => {
+            const isColumnHovered = state.hoverId === dateToKey(date);
+            hoveredRef.current = isColumnHovered;
+            
+            taskContainerRef.current?.classList.toggle(styles.hovered, hoveredRef.current);
 
-            taskContainerRef.current?.classList.toggle(
-                styles.hovered,
-                hoveredRef.current
-            );
+            updateSkeleton(state);
         });
     }, [taskContext, date]);
 
     useEffect(() => {
-        if (!taskContext.subscribeDragDropColumn) return;
+        if (!taskContext.subscribeDragDrop) return;
 
-        const unsubscribe = taskContext.subscribeDragDropColumn(handleTaskDrop);
+        const unsubscribe = taskContext.subscribeDragDrop(handleTaskDrop);
 
         return () => unsubscribe();
     }, [taskContext, date]);
 
-    const handleTaskDrop = async (state: HoveredColumnState) => {
+    const handleTaskDrop = async (state: TaskDragState) => {
+        updateSkeleton(state);
+
         if (state.hoverId !== dateToKey(date)) return;
 
         if (taskContext.draggedTaskRef.current) {
             const taskId = taskContext.draggedTaskRef.current!.task.id;
             
-            const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
+            const { hour24, minute } = get24HourMinuteFromOffset(state.taskTop ?? 0);
             const hourTime = new HourTime(hour24, minute);
 
-            const taskTimeBlock = timeBlocksRef.current.find(tb =>
-                tb.taskId === taskContext.draggedTaskRef.current!.task.id
-            );
+            const taskTimeBlock = taskContext.draggedTaskRef.current!.timeBlock;
             const duration = taskTimeBlock?.duration ?? 0;
             if (duration === 0 || duration < TASK_MIN_DURATION_SECONDS) {
                 console.log("--- Task must be 15 minutes long");
@@ -198,57 +176,57 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
 
             if (duration > 0) {
                 const taskStartUnix = calendarDate.startSeconds + hourTime.toSecondsSince();
-                const taskEndUnix = taskStartUnix + duration;
-
-                const hasOverlap = todayTimeBlocksRef.current.some(tb => {
-                    if (!tb.startsAt || tb.taskId === taskId) return false;
-
-                    const start = postgresTimestamptzToUnix(tb.startsAt);
-                    const end = start + tb.duration;
-
-                    return taskStartUnix < end && taskEndUnix > start;
-                });
+                const hasOverlap = timeBlockContext.hasCollision(taskStartUnix, duration, taskId);
 
                 if (hasOverlap) {
                     // Display toast for overlap
                     return;
                 }
             }
-            
-            const [timeBlock, timeBlockError] = await handlePromise(
-                updateTimeBlock(
-                    taskTimeBlock!.id,
-                    { startsAt:
-                        calendarDate.builder()
-                        .addSeconds(hourTime.toSecondsSince())
-                        .toISOString()
-                    }
-                )
-            )
-            if (!timeBlock) {
-                console.log(`Error updating time block [${taskTimeBlock!.id}] related to task [${taskId}]:`, timeBlockError);
-            } else {
-                updateTimeBlocks(prev => 
-                    prev.map(tb => tb.id === timeBlock.id ? timeBlock : tb)
-                )
-            }
 
             const [response, error] = await handlePromise(
                 updateTask(taskId, {
                     task: {
                         isBacklogged: false
+                    },
+                    timeBlock: {
+                        id: taskTimeBlock!.id,
+                        startsAt:
+                            calendarDate.builder()
+                            .addSeconds(hourTime.toSecondsSince())
+                            .toISOString()
                     }
                 })
             );
             
             if (!response) {
-                console.error(`Error updating task-{${taskId}}:`, error);
+                console.error(`Error dragging task [${taskId}] into day column:`, error);
             } else {
                 updateTasks(prev => 
                     prev.map(t => t.id === response.task.id ? response.task : t)
                 );
+                if (response.timeBlock) {
+                    updateTimeBlocks(prev =>
+                        prev.map(tb => tb.id === response.timeBlock!.id ? response.timeBlock! : tb)
+                    );
+                }
                 console.log("Dropped task:", response.task.id, "at column", date.toISOString(), "-- At time", hourTime.Time24);
             }
+        }
+    }
+
+    function updateSkeleton(state: TaskDragState) {
+        const isColumnHovered = state.hoverId === dateToKey(date);
+        const element = skeletonRef.current;
+        if (element) {
+            const hasSkeleton = state.skeletonTop != null && state.skeletonHeight != null;
+            showSkeletonRef.current = isColumnHovered && hasSkeleton;
+
+            if (showSkeletonRef.current) {
+                element.style.top = `${state.skeletonTop}px`;
+                element.style.height = `${state.skeletonHeight}px`;
+            }
+            element.style.display = showSkeletonRef.current ? "block" : "none";
         }
     }
 
@@ -286,20 +264,16 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                 ?.scrollTop ?? 0
         );
     }, []);
-    
-    function secondsToOffset(seconds: number): number {
-        const minutes = seconds / 60;
-        const spacePerMinute = HOUR_HEIGHT / 60;
-        return minutes * spacePerMinute;
-    }
-    
+
+    const skeletonRef = useRef<HTMLDivElement | null>(null);
+
     return (
         <div
             className={styles.column}
             onContextMenu={(e) => {
                 if(e.clientY < HEADER_HEIGHT) return;
 
-                const { hour24, minute } = get24HourMinuteFromOffset(getScrollTop() + e.clientY - HEADER_HEIGHT, SNAP_MINUTES);
+                const { hour24, minute } = get24HourMinuteFromOffset(getScrollTop() + e.clientY - HEADER_HEIGHT);
                 const hourTime = new HourTime(hour24, minute);
 
                 taskStartSeconds.current = calendarDate.startSeconds + hourTime.toSecondsSince();
@@ -335,8 +309,10 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                         ref={taskContainerRef}
                         className={styles.task_container}
                         data-hover-id={dateToKey(date)}
+                        data-unix-start={calendarDate.startSeconds}
                         style={{ height: taskContainerHeight }}
                     >
+                        <TaskSkeleton ref={skeletonRef} />
                         {todayTimeBlocks.map(timeBlock => {
                             if (timeBlock.taskId) {
                                 if (tasks.length === 0) return;
@@ -404,9 +380,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                                         }}
                                     />
                                 );
-                            }
-
-                           
+                            }                    
                         })}
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import { HOUR_HEIGHT } from "@/constants/column";
+import { HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
 
 /**
  * Convert Unix seconds to Postgres timestamptz string
@@ -64,18 +64,34 @@ export function postgresTimestamptzToUnix(timestamptz: string): number {
     return Math.floor(date.getTime() / 1000);
 }
 
-export function get24HourMinuteFromOffset(
-    offset: number,
-    minuteInterval: number,
-) {
-    const snapDist = HOUR_HEIGHT / (60 / minuteInterval);
+export function get24HourMinuteFromOffset(offset: number) {
+    const snapsPerHour = 60 / SNAP_MINUTES;
+    const snapDist = HOUR_HEIGHT / snapsPerHour;
+    
+    // Snapping tolerance px
+    const threshold = 5;
 
     const hour24 = Math.floor(offset / HOUR_HEIGHT);
     const remainder = offset % HOUR_HEIGHT;
-    const minute = minuteInterval * Math.floor(remainder / snapDist);
+
+    // Calculate the nearest snap index
+    const rawIndex = remainder / snapDist;
+    const nearestIndex = Math.round(rawIndex);
+
+    const snappedRemainder =
+        Math.abs(remainder - nearestIndex * snapDist) <= threshold
+            ? nearestIndex
+            : Math.floor(rawIndex);
+    const minute = Math.min(snappedRemainder * SNAP_MINUTES, 60 - SNAP_MINUTES);
 
     return {
         hour24,
         minute,
     };
+}
+
+export function secondsToOffset(seconds: number): number {
+    const minutes = seconds / 60;
+    const spacePerMinute = HOUR_HEIGHT / 60;
+    return minutes * spacePerMinute;
 }

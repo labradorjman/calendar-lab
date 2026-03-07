@@ -1,0 +1,35 @@
+.skeleton {
+    background-color: transparent;
+    width: 100%;
+    position: absolute;
+
+    --dot-color: #1390a0;
+    --dot-size: 4px;
+    --gap-size: 4px;
+    --border-width: 2px;
+    --radius: var(--gap_xsmall);
+
+    border-radius: var(--radius);
+
+    background:
+        repeating-linear-gradient(
+            to right,
+            var(--dot-color) 0 var(--dot-size),
+            transparent var(--dot-size) calc(var(--dot-size) + var(--gap-size))
+        ) top / 100% var(--border-width) no-repeat,
+        repeating-linear-gradient(
+            to bottom,
+            var(--dot-color) 0 var(--dot-size),
+            transparent var(--dot-size) calc(var(--dot-size) + var(--gap-size))
+        ) right / var(--border-width) 100% no-repeat,
+        repeating-linear-gradient(
+            to right,
+            var(--dot-color) 0 var(--dot-size),
+            transparent var(--dot-size) calc(var(--dot-size) + var(--gap-size))
+        ) bottom / 100% var(--border-width) no-repeat,
+        repeating-linear-gradient(
+            to bottom,
+            var(--dot-color) 0 var(--dot-size),
+            transparent var(--dot-size) calc(var(--dot-size) + var(--gap-size))
+        ) left / var(--border-width) 100% no-repeat;
+}

@@ -4,20 +4,20 @@ import React, { createContext, useContext, useRef } from "react";
 import { Task } from "@/models/task";
 import { TimeBlock } from "./models/timeBlock";
 
-export interface HoveredColumnState {
+export interface TaskDragState {
     hoverId: string | null;
-    columnRight: number | null;
-    topOffset: number | null;
-    columnContentTop: number | null;
+    taskTop: number | null;
+    skeletonTop: number | null;
+    skeletonHeight: number | null;
 }
 
 interface TaskContextProps {
     draggedTaskRef: React.RefObject<{ task: Task; timeBlock?: TimeBlock } | null>;
-    hoveredColumnState: React.RefObject<HoveredColumnState>;
-    setHoveredColumn: (columnState: Partial<HoveredColumnState>) => void;
-    subscribeHoveredColumn?: (callback: (columnState: HoveredColumnState) => void) => () => void;
-    setDragDropColumn: (columnState: HoveredColumnState) => void;
-    subscribeDragDropColumn?: (callback: (columnState: HoveredColumnState) => void) => () => void;
+    taskDragState: React.RefObject<TaskDragState>;
+    setTaskDragState: (taskDragState: Partial<TaskDragState>) => void;
+    subscribeTaskDrag?: (callback: (taskDragState: TaskDragState) => void) => () => void;
+    setTaskDropState: (taskDragState: TaskDragState) => void;
+    subscribeDragDrop?: (callback: (taskDragState: TaskDragState) => void) => () => void;
 }
 
 interface TaskContextProviderProps {
@@ -38,40 +38,40 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
     const draggedTaskRef = useRef<{ task: Task; timeBlock?: TimeBlock } | null>(null);
 
     // Hovered state ref
-    const hoveredColumnState = useRef<HoveredColumnState>({
+    const hoveredtaskDragState = useRef<TaskDragState>({
         hoverId: null,
-        columnRight: null,
-        topOffset: null,
-        columnContentTop: null,
+        taskTop: null,
+            skeletonTop: null,
+        skeletonHeight: null,
     });
 
     // Hovered subscription
-    const hoveredSubscribers = useRef<((state: HoveredColumnState) => void)[]>([]);
-    const subscribeHoveredColumn = (callback: (state: HoveredColumnState) => void) => {
+    const hoveredSubscribers = useRef<((state: TaskDragState) => void)[]>([]);
+    const subscribeTaskDrag = (callback: (state: TaskDragState) => void) => {
         hoveredSubscribers.current.push(callback);
         return () => {
             hoveredSubscribers.current = hoveredSubscribers.current.filter(cb => cb !== callback);
         };
     };
 
-    const setHoveredColumn = (partialState: Partial<HoveredColumnState>) => {
-        hoveredColumnState.current = {
-            ...hoveredColumnState.current,
+    const setTaskDragState = (partialState: Partial<TaskDragState>) => {
+        hoveredtaskDragState.current = {
+            ...hoveredtaskDragState.current,
             ...partialState,
         };
-        hoveredSubscribers.current.forEach(cb => cb(hoveredColumnState.current));
+        hoveredSubscribers.current.forEach(cb => cb(hoveredtaskDragState.current));
     };
 
     // Drag drop subscription
-    const dragDropSubscribers = useRef<((state: HoveredColumnState) => void)[]>([]);
-    const subscribeDragDropColumn = (callback: (state: HoveredColumnState) => void) => {
+    const dragDropSubscribers = useRef<((state: TaskDragState) => void)[]>([]);
+    const subscribeDragDrop = (callback: (state: TaskDragState) => void) => {
         dragDropSubscribers.current.push(callback);
         return () => {
             dragDropSubscribers.current = dragDropSubscribers.current.filter(cb => cb !== callback);
         };
     };
 
-    const setDragDropColumn = (state: HoveredColumnState) => {
+    const setTaskDropState = (state: TaskDragState) => {
         dragDropSubscribers.current.forEach(cb => cb(state));
     };
 
@@ -79,11 +79,11 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
         <TaskContext.Provider
             value={{
                 draggedTaskRef,
-                hoveredColumnState,
-                setHoveredColumn,
-                subscribeHoveredColumn,
-                setDragDropColumn,
-                subscribeDragDropColumn,
+                taskDragState: hoveredtaskDragState,
+                setTaskDragState,
+                subscribeTaskDrag,
+                setTaskDropState,
+                subscribeDragDrop,
             }}
         >
             {children}

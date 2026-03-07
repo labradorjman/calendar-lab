@@ -2,11 +2,11 @@ import { Task } from "@/models/task";
 import styles from "./Task.module.scss";
 import { useEffect, useRef } from "react";
 import { useClickDrag } from "@/hooks/useClickDrag";
-import { HoveredColumnState, useTaskContext } from "@/taskContext";
-import { postgresTimestamptzToUnix } from "@/utils/time";
+import { TaskDragState as TaskDragState, useTaskContext } from "@/taskContext";
+import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, secondsToOffset } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
-import { HEADER_HEIGHT } from "@/constants/column";
+import { HEADER_HEIGHT, HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { deleteTask } from "@/services/taskService";
@@ -15,6 +15,7 @@ import { TimeBlock } from "@/models/timeBlock";
 import { useCalendarContext } from "@/context";
 import { handlePromise } from "@/utils/handleError";
 import { removeTimeBlockFromStore } from "@/store/timeBlocks";
+import { useTimeBlockContext } from "@/timeBlockContext";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
@@ -23,8 +24,12 @@ interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: "default" | "backlogged";
 }
 
+// Height of placeholder object
+const FIXED_PLACEHOLDER_HEIGHT = 80;
+
 export default function TaskBlock({ task, timeBlock, calendarDate, variant = "default", style, ...props }: TaskProps) {
     const calendarContext = useCalendarContext();
+    const timeBlockContext = useTimeBlockContext();
 
     const { openContextMenu } = useContextMenu();
     const menuItems = [
@@ -68,115 +73,141 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
     const taskRef = useRef<HTMLDivElement>(null);
     const hoverablesRef = useRef<NodeListOf<HTMLElement> | null>(null);
     const hoverableRectsRef = useRef<
-        { id: string; rect: DOMRect }[]
+        { id: string; rect: DOMRect; dayStartUnix?: number; }[]
     >([]);
 
     let placeholder: HTMLElement | null = null;
-    let cursorOffsetTop: number = 0;
-    let hoverState: HoveredColumnState = {
+    let placeHolderTop = 0;
+    let cursorOffsetTop = 0;
+    let dragState: TaskDragState = {
         hoverId: null,
-        columnRight: null,
-        topOffset: null,
-        columnContentTop: null,
+        taskTop: null,
+        skeletonTop: null,
+        skeletonHeight: null,
     };
 
     useClickDrag(taskRef, {
         onDragStart: (_, pointerY) => {
-            if (!taskRef.current) return;
-            if (taskContext.draggedTaskRef.current) return;
+            if (!taskRef.current || taskContext.draggedTaskRef.current) return;
 
             hoverableRectsRef.current = Array.from(
                 document.querySelectorAll<HTMLElement>("[data-hover-id]")
             ).map(element => ({
                 id: element.dataset.hoverId!,
                 rect: element.getBoundingClientRect(),
+                dayStartUnix: element.dataset.unixStart
+                    ? parseInt(element.dataset.unixStart, 10)
+                    : undefined,
             }));
 
             hoverablesRef.current = document.querySelectorAll("[data-hover-id]");
             taskContext.draggedTaskRef.current = { task, timeBlock }
             const rect = taskRef.current.getBoundingClientRect();
 
+            // Recenter placeholder to be on top of cursor
+            placeHolderTop = pointerY >= rect.top + (FIXED_PLACEHOLDER_HEIGHT / 2)
+                ? pointerY - (FIXED_PLACEHOLDER_HEIGHT / 2)
+                : rect.top;
+
             placeholder = taskRef.current.cloneNode(true) as HTMLElement;
             placeholder.classList.add(styles.placeholder);
             placeholder.style.position = "fixed";
             placeholder.style.left = `${rect.left}px`;
-            placeholder.style.top = `${rect.top}px`;
+            placeholder.style.top = `${placeHolderTop}px`;
             placeholder.style.width = `${rect.width}px`;
-            placeholder.style.height = `80px`;
+            placeholder.style.height = `${FIXED_PLACEHOLDER_HEIGHT}px`;
             placeholder.style.zIndex = "9999";
             placeholder.style.pointerEvents = "none";
             document.body.appendChild(placeholder);
 
-            taskRef.current.classList.add(styles.skeleton);
+            taskRef.current.classList.add(styles.hidden);
             taskRef.current.style.pointerEvents = "none";
 
-            cursorOffsetTop = pointerY - rect.top;
+            cursorOffsetTop = pointerY - placeHolderTop;
         },
         onDragMove: (dx, dy, pointerX, pointerY) => {
             if (!placeholder) return;
 
             placeholder.style.transform = `translate(${dx}px, ${dy}px)`;
 
-            // Preferred match refers to the work session overlapping the day column bounding rect
-            let preferredMatch: HoveredColumnState | null = null;
-            let fallbackMatch: HoveredColumnState | null = null;
+            // Priority match refers to the work session inside of the day column bounding rect
+            let match: TaskDragState | null = null;
             
-            hoverableRectsRef.current.forEach(({ id, rect}) => {
-                if (
+            hoverableRectsRef.current.forEach(({ id, rect, dayStartUnix }) => {
+                const isInsideRef =
                     pointerX >= rect.left &&
                     pointerX <= rect.right &&
                     pointerY >= rect.top &&
-                    pointerY <= rect.bottom
-                ) {
+                    pointerY <= rect.bottom;
+
+                if (isInsideRef) {
                     const scrollElement = scrollContext.get(id)?.getScrollElement();
                     const scrollTop = scrollElement?.scrollTop ?? 0;
 
                     if (rect.bottom > HEADER_HEIGHT) {
                         const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
-                        const localTop = screenTop - HEADER_HEIGHT + scrollTop;
+                        const topRaw = screenTop - HEADER_HEIGHT + scrollTop;
 
-                        const match = {
+                        const isWorkSession = id.startsWith("ws-");
+                        const isDayColumn = id.startsWith("date-");
+
+                        // Snapped time accounting for overlap
+                        const finalTop = isDayColumn ? getFinalTop(topRaw, dayStartUnix!) : topRaw;
+                        let skeletonTop: number | null = null;
+                        let skeletonHeight: number | null = null;
+
+                        // Set the text visual for time snapping
+                        const timeElement = placeholder?.querySelector(`.${styles.time}`) as HTMLElement | null;
+                        if (timeElement && timeBlock && timeBlock.duration > 0) {
+                            const { hour24, minute } = get24HourMinuteFromOffset(finalTop);
+                            const hourTime = new HourTime(hour24, minute);
+                            const endHourTime = hourTime.addMinutes(timeBlock.duration / 60);
+                            timeElement.textContent = `${hourTime.Time12} - ${endHourTime.Time12WithSuffix}`;
+                        }
+
+                        if (isDayColumn) {
+                            skeletonTop = finalTop;
+                            skeletonHeight = timeBlock ? (HOUR_HEIGHT / 60) * (timeBlock.duration / 60) : null;
+                        }
+
+                        const newMatch = {
                             hoverId: id,
-                            columnRight: rect.left + rect.width,
-                            topOffset: screenTop,
-                            columnContentTop: localTop,
+                            taskTop: finalTop,
+                            skeletonTop: skeletonTop,
+                            skeletonHeight: skeletonHeight,
                         };
 
-                        if (id.startsWith("ws-")) {
-                            preferredMatch = match;
-                        } else {
-                            fallbackMatch = match;
+                        if (isWorkSession || !match) {
+                            match = newMatch;
                         }
                     }
                 }
             });
 
-            const nextState = preferredMatch ?? fallbackMatch ?? {
-                hoverId: null,
-                columnRight: null,
-                topOffset: null,
-                columnContentTop: null,
-            };
+            const nextState: TaskDragState =
+                match ?? {
+                    hoverId: null,
+                    taskTop: null,
+                    skeletonTop: null,
+                    skeletonHeight: null,
+                };
 
-            hoverState = nextState;
-            taskContext.setHoveredColumn(nextState);
+            dragState = nextState;
+            taskContext.setTaskDragState(nextState);
         },
         onDragEnd: () => {
-            taskContext.setHoveredColumn({
-                hoverId: null,
-                columnRight: null,
-                topOffset: null,
-                columnContentTop: null,
+            taskContext.setTaskDropState({
+                ...dragState,
+                skeletonTop: null,
+                skeletonHeight: null,
             });
-
-            taskContext.setDragDropColumn(hoverState);
             taskContext.draggedTaskRef.current = null;
 
-            hoverState = {
+            dragState = {
                 hoverId: null,
-                columnRight: null,
-                topOffset: null,
-                columnContentTop: null,
+                taskTop: null,
+                skeletonTop: null,
+                skeletonHeight: null,
             };
 
             if (placeholder) {
@@ -185,11 +216,46 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             }
 
             if (taskRef.current) {
-                taskRef.current.classList.remove(styles.skeleton);
+                taskRef.current.classList.remove(styles.hidden);
                 taskRef.current.style.pointerEvents = "auto";
             }
         },
     });
+
+    function getFinalTop(rawTop: number, dayStartUnix: number): number {
+        if (!calendarDate || !timeBlock?.duration || !timeBlock.startsAt) {
+            return rawTop;
+        }
+
+        const { hour24, minute } = get24HourMinuteFromOffset(rawTop);
+        const hourTime = new HourTime(hour24, minute);
+
+        const taskStartUnix = dayStartUnix + hourTime.toSecondsSince();
+
+        const hasOverlap = timeBlockContext.hasCollision(
+            taskStartUnix,
+            timeBlock.duration,
+            task.id
+        );
+
+        let potentialStartUnix: number | null = null;
+        
+        if (hasOverlap) {
+            potentialStartUnix = timeBlockContext.findClosestAvailableStart(
+                taskStartUnix,
+                timeBlock.duration,
+                task.id
+            );
+        }
+
+        if (hasOverlap && potentialStartUnix == null) {
+            return rawTop;
+        }
+
+        const startUnix = hasOverlap ? potentialStartUnix! : taskStartUnix;
+        const finalTop = secondsToOffset(startUnix - dayStartUnix);
+        return finalTop;
+    }
 
     const startUnix = timeBlock?.startsAt
         ? postgresTimestamptzToUnix(timeBlock.startsAt)

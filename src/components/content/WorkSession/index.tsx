@@ -39,9 +39,9 @@ export default function WorkSessionBlock({ workSession, timeBlock, tasks, style,
     }, [calendarContext]);
 
     useEffect(() => {
-        if (!taskContext.subscribeHoveredColumn) return;
+        if (!taskContext.subscribeTaskDrag) return;
 
-        return taskContext.subscribeHoveredColumn(state => {
+        return taskContext.subscribeTaskDrag(state => {
             hoveredRef.current = state.hoverId === workSessionToKey(workSession);
 
             blockRef.current?.classList.toggle(

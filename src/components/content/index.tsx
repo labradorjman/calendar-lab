@@ -35,7 +35,7 @@ export default function Content() {
         const unregisterDays = prevDateRange.current.filter(
         prev =>
             !calendarContext.dateRange.some(
-            curr => dateToKey(curr) === dateToKey(prev)
+                curr => dateToKey(curr) === dateToKey(prev)
             )
         );
         

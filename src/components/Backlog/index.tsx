@@ -6,7 +6,7 @@ import { useEffect, useMemo } from "react";
 import { Task } from "@/models/task";
 import TaskBlock from "@/components/tasks/TaskBlock";
 import SimpleBar from "simplebar-react";
-import { HoveredColumnState, useTaskContext } from "@/taskContext";
+import { TaskDragState, useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/taskService";
 import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
@@ -60,13 +60,13 @@ export default function Backlog() {
     }, []);
     
     useEffect(() => {
-        if (!taskContext.subscribeDragDropColumn) return;
+        if (!taskContext.subscribeDragDrop) return;
 
-        const unsubscribe = taskContext.subscribeDragDropColumn(handleDrop);
+        const unsubscribe = taskContext.subscribeDragDrop(handleDrop);
         return () => unsubscribe();
     }, [taskContext]);
 
-    const handleDrop = async (state: HoveredColumnState) => {
+    const handleDrop = async (state: TaskDragState) => {
         if (state.hoverId !== "backlog-column") return;
 
         if (taskContext.draggedTaskRef.current) {

@@ -81,56 +81,6 @@ export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnP
             left
         }));
     }, [simpleBarRef.current]);
-  
-    useEffect(() => {
-        if (!taskContext.subscribeHoveredColumn) return;
-
-        const unsubscribe = taskContext.subscribeHoveredColumn(state => {
-            const isDayColumn = state.hoverId?.startsWith("date:");
-            setShowAlignment(!!isDayColumn);
-
-            if (!isDayColumn) return;
-
-            const right = state.columnRight ?? 0;
-            if (right === 0) return;
-
-            const topOffset = state.topOffset ?? 0;
-
-            const { hour24, minute } = get24HourMinuteFromOffset(state.columnContentTop ?? 0, SNAP_MINUTES);
-            const hourTime = new HourTime(hour24, minute)
-
-            setTimeString(prev => {
-                if(hourTime.Time12 === prev) {
-                    return prev;
-                }
-
-                return hourTime.Time12;
-            })
-
-            // console.log("T:", topOffset, "S:", scrollTop, "H:", HEADER_HEIGHT);
-            setAlignment(prev => {
-                const nextTop = Math.max(HEADER_HEIGHT, topOffset);
-                const nextWidth = right - prev.left;
-
-                const hasChanged =
-                nextTop !== prev.top ||
-                nextWidth !== prev.width ||
-                right !== rightPosRef.current;
-
-                if (!hasChanged) return prev;
-
-                rightPosRef.current = right;
-
-                return {
-                    ...prev,
-                    top: nextTop,
-                    width: nextWidth,
-                };
-            });
-        });
-
-        return () => unsubscribe();
-    }, [taskContext]);
 
     return (
         <>

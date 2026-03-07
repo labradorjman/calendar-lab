@@ -13,6 +13,7 @@ import ScrollSyncContextProvider from "@/scrollSync/ScrollSyncContext";
 import TaskConextProvider from "@/taskContext";
 import { ContextMenuProvider } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { ContextMenuRenderer } from "@/components/_layout/ContextMenu/ContextMenuRenderer";
+import TimeBlockContextProvider from "@/timeBlockContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,15 +49,17 @@ export default function RootLayout({
                 >
                     <TaskConextProvider>
                         <ContextMenuProvider>
-                            <div className={styles.layout}>
-                                <ScrollSyncContextProvider>
-                                    <div className={styles.side_panel}>
-                                        <AppCalendar />
-                                        <Backlog />
-                                    </div>
-                                    <div className={styles.main_content}>{children}</div>      
-                                </ScrollSyncContextProvider>
-                            </div>
+                            <TimeBlockContextProvider>
+                                <div className={styles.layout}>
+                                    <ScrollSyncContextProvider>
+                                        <div className={styles.side_panel}>
+                                            <AppCalendar />
+                                            <Backlog />
+                                        </div>
+                                        <div className={styles.main_content}>{children}</div>      
+                                    </ScrollSyncContextProvider>
+                                </div>
+                            </TimeBlockContextProvider>
                             <ContextMenuRenderer/>
                         </ContextMenuProvider>
                     </TaskConextProvider>

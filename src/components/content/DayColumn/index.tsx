@@ -160,8 +160,10 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
 
         if (taskContext.draggedTaskRef.current) {
             const taskId = taskContext.draggedTaskRef.current!.task.id;
+
+            if (state.taskTop == null) return;
             
-            const { hour24, minute } = get24HourMinuteFromOffset(state.taskTop ?? 0);
+            const { hour24, minute } = get24HourMinuteFromOffset(state.taskTop);
             const hourTime = new HourTime(hour24, minute);
 
             const taskTimeBlock = taskContext.draggedTaskRef.current!.timeBlock;

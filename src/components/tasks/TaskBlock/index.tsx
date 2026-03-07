@@ -146,30 +146,57 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
 
                     if (rect.bottom > HEADER_HEIGHT) {
                         const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
-                        const topRaw = screenTop - HEADER_HEIGHT + scrollTop;
+                        const topRaw = Math.max(0, screenTop - HEADER_HEIGHT + scrollTop);
 
                         const isWorkSession = id.startsWith("ws-");
                         const isDayColumn = id.startsWith("date-");
+                        const isBacklog = id === "backlog-column";
 
                         // Snapped time accounting for overlap
                         const finalTop = isDayColumn ? getFinalTop(topRaw, dayStartUnix!) : topRaw;
+
                         let skeletonTop: number | null = null;
                         let skeletonHeight: number | null = null;
 
-                        // Set the text visual for time snapping
-                        const timeElement = placeholder?.querySelector(`.${styles.time}`) as HTMLElement | null;
-                        if (timeElement && timeBlock && timeBlock.duration > 0) {
-                            const { hour24, minute } = get24HourMinuteFromOffset(finalTop);
-                            const hourTime = new HourTime(hour24, minute);
-                            const endHourTime = hourTime.addMinutes(timeBlock.duration / 60);
-                            timeElement.textContent = `${hourTime.Time12} - ${endHourTime.Time12WithSuffix}`;
-                        }
+                        if (timeBlock && timeBlock.duration > 0) {
+                            const descriptionElement = placeholder?.querySelector(`.${styles.description}`);
+                            descriptionElement?.remove();
 
-                        if (isDayColumn) {
-                            skeletonTop = finalTop;
-                            skeletonHeight = timeBlock ? (HOUR_HEIGHT / 60) * (timeBlock.duration / 60) : null;
-                        }
+                            // Set the text visual for time snapping
+                            let timeElement = placeholder?.querySelector(`.${styles.time}`) as HTMLElement | null;
 
+                            if (!timeElement) {
+                                timeElement = document.createElement("span");
+                                timeElement.className = styles.time;
+
+                                const nameElement = placeholder?.querySelector(`.${styles.name}`);
+
+                                if (nameElement?.parentNode) {
+                                    nameElement.parentNode.insertBefore(timeElement, nameElement.nextSibling);
+                                }
+                            }
+
+                            let textDisplay = "";
+                            if (finalTop != null) {
+                                const { hour24, minute } = get24HourMinuteFromOffset(finalTop);
+                                const hourTime = new HourTime(hour24, minute);
+                                const endHourTime = hourTime.addMinutes(timeBlock.duration / 60);
+
+                                textDisplay = `${hourTime.Time12} - ${endHourTime.Time12WithSuffix}`;
+                            }
+
+                            if (isBacklog) {
+                                textDisplay = "Backlog";
+                            }
+
+                            if (isDayColumn) {
+                                skeletonTop = finalTop;
+                                skeletonHeight = timeBlock ? (HOUR_HEIGHT / 60) * (timeBlock.duration / 60) : null;
+                            }
+
+                            timeElement.textContent = textDisplay;
+                        }
+                      
                         const newMatch = {
                             hoverId: id,
                             taskTop: finalTop,
@@ -222,9 +249,9 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         },
     });
 
-    function getFinalTop(rawTop: number, dayStartUnix: number): number {
-        if (!calendarDate || !timeBlock?.duration || !timeBlock.startsAt) {
-            return rawTop;
+    function getFinalTop(rawTop: number, dayStartUnix: number): number | null {
+        if (!timeBlock?.duration) {
+            return null;
         }
 
         const { hour24, minute } = get24HourMinuteFromOffset(rawTop);
@@ -249,11 +276,15 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         }
 
         if (hasOverlap && potentialStartUnix == null) {
-            return rawTop;
+            return null;
         }
 
         const startUnix = hasOverlap ? potentialStartUnix! : taskStartUnix;
-        const finalTop = secondsToOffset(startUnix - dayStartUnix);
+        const taskFinalSeconds = startUnix - dayStartUnix;
+
+        if (taskFinalSeconds < 0) return null;
+
+        const finalTop = secondsToOffset(taskFinalSeconds);
         return finalTop;
     }
 

@@ -69,7 +69,7 @@ export function get24HourMinuteFromOffset(offset: number) {
     const snapDist = HOUR_HEIGHT / snapsPerHour;
     
     // Snapping tolerance px
-    const threshold = 5;
+    const threshold = 0;
 
     const hour24 = Math.floor(offset / HOUR_HEIGHT);
     const remainder = offset % HOUR_HEIGHT;

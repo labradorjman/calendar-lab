@@ -84,7 +84,6 @@ export default function TimeBlockContextProvider({
             // console.log(`${end} <= ${tbStart} - ${end <= tbStart}\n${start} >= ${tbEnd} - ${start >= tbEnd}`);
 
             if (overlaps) {
-                // console.log('Collision detected with block:', tb);
                 return true;
             }
         }
@@ -104,6 +103,7 @@ export default function TimeBlockContextProvider({
 
         for (let i = 0; i < blocks.length; i++) {
             const tb = blocks[i];
+            
             if ((taskId && tb.taskId === taskId) || (workSessionId && tb.workSessionId === workSessionId)) {
                 continue;
             }
@@ -130,7 +130,7 @@ export default function TimeBlockContextProvider({
                     
             // console.log(candidateStart, ">=", prevEnd);
             if (candidateStart >= prevEnd) {
-                // console.log("return", candidateStart);
+                // console.log("return candidate start", candidateStart);
                 return candidateStart;
             }
 

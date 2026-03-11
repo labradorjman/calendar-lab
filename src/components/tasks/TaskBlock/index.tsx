@@ -16,18 +16,20 @@ import { useCalendarContext } from "@/context";
 import { handlePromise } from "@/utils/handleError";
 import { removeTimeBlockFromStore } from "@/store/timeBlocks";
 import { useTimeBlockContext } from "@/timeBlockContext";
+import { taskToKey } from "@/utils/objectToKey";
 
 interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     task: Task;
     timeBlock?: TimeBlock;
     calendarDate?: CalendarDate;
     variant?: "default" | "backlogged";
+    getScrollTop?: () => number;
 }
 
 // Height of placeholder object
 const FIXED_PLACEHOLDER_HEIGHT = 80;
 
-export default function TaskBlock({ task, timeBlock, calendarDate, variant = "default", style, ...props }: TaskProps) {
+export default function TaskBlock({ task, timeBlock, calendarDate, variant = "default", getScrollTop, style, ...props }: TaskProps) {
     const calendarContext = useCalendarContext();
     const timeBlockContext = useTimeBlockContext();
 
@@ -66,7 +68,6 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         },
     ];
 
-    const scrollContext = useScrollSyncContext();
     const taskContext = useTaskContext();
 
     const tzOffsetSeconds = calendarDate?.tzOffsetSeconds ?? 0;
@@ -76,9 +77,9 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         { id: string; rect: DOMRect; dayStartUnix?: number; }[]
     >([]);
 
+    const placeHolderCenter =  (FIXED_PLACEHOLDER_HEIGHT / 2);
+    let scrollDelta = 0;
     let placeholder: HTMLElement | null = null;
-    let placeHolderTop = 0;
-    let cursorOffsetTop = 0;
     let dragState: TaskDragState = {
         hoverId: null,
         taskTop: null,
@@ -90,6 +91,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         onDragStart: (_, pointerY) => {
             if (!taskRef.current || taskContext.draggedTaskRef.current) return;
 
+            scrollDelta = getScrollTop?.() ?? 0;
             hoverableRectsRef.current = Array.from(
                 document.querySelectorAll<HTMLElement>("[data-hover-id]")
             ).map(element => ({
@@ -105,9 +107,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             const rect = taskRef.current.getBoundingClientRect();
 
             // Recenter placeholder to be on top of cursor
-            placeHolderTop = pointerY >= rect.top + (FIXED_PLACEHOLDER_HEIGHT / 2)
-                ? pointerY - (FIXED_PLACEHOLDER_HEIGHT / 2)
-                : rect.top;
+            const placeHolderTop = pointerY - placeHolderCenter;
 
             placeholder = taskRef.current.cloneNode(true) as HTMLElement;
             placeholder.classList.add(styles.placeholder);
@@ -122,94 +122,101 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
 
             taskRef.current.classList.add(styles.hidden);
             taskRef.current.style.pointerEvents = "none";
-
-            cursorOffsetTop = pointerY - placeHolderTop;
         },
         onDragMove: (dx, dy, pointerX, pointerY) => {
             if (!placeholder) return;
-
+            
             placeholder.style.transform = `translate(${dx}px, ${dy}px)`;
 
-            // Priority match refers to the work session inside of the day column bounding rect
             let match: TaskDragState | null = null;
+
+            const currentScrollDelta = getScrollTop?.() ?? 0;
+            const taskLocalTop = Math.max(HEADER_HEIGHT, pointerY - placeHolderCenter) + currentScrollDelta;
+            const localPointerY = taskLocalTop + placeHolderCenter;
             
-            hoverableRectsRef.current.forEach(({ id, rect, dayStartUnix }) => {
+            for (const { id, rect, dayStartUnix } of hoverableRectsRef.current) {
+                if (id === taskToKey(task)) {
+                    continue;
+                }
+
+                const isWorkSession = id.startsWith("ws-");
+                const isDayColumn = id.startsWith("date-");
+                const isBacklog = id === "backlog-column";
+                
+                const isColumn = isDayColumn || isBacklog;
+                const offset = isColumn ? 0 : scrollDelta;
+
+                const rectTop = rect.top + offset;
+                const rectBottom = rect.bottom + offset;
+
+                const pointerTop = isColumn ? pointerY : localPointerY;
+                const pointerBottom = isColumn ? pointerY : taskLocalTop;
+
                 const isInsideRef =
                     pointerX >= rect.left &&
                     pointerX <= rect.right &&
-                    pointerY >= rect.top &&
-                    pointerY <= rect.bottom;
+                    pointerTop >= rectTop &&
+                    pointerBottom <= rectBottom;
 
                 if (isInsideRef) {
-                    const scrollElement = scrollContext.get(id)?.getScrollElement();
-                    const scrollTop = scrollElement?.scrollTop ?? 0;
+                    // Snapped time accounting for overlap
+                    const clampedTop  = Math.min(HOUR_HEIGHT * 24, taskLocalTop - placeHolderCenter);
+                    const finalTop = isDayColumn ? getFinalTop(clampedTop, dayStartUnix!) : localPointerY;
 
-                    if (rect.bottom > HEADER_HEIGHT) {
-                        const screenTop = Math.max(rect.top, pointerY - cursorOffsetTop);
-                        const topRaw = Math.max(0, screenTop - HEADER_HEIGHT + scrollTop);
+                    let skeletonTop: number | null = null;
+                    let skeletonHeight: number | null = null;
 
-                        const isWorkSession = id.startsWith("ws-");
-                        const isDayColumn = id.startsWith("date-");
-                        const isBacklog = id === "backlog-column";
+                    if (timeBlock && timeBlock.duration > 0) {
+                        const descriptionElement = placeholder?.querySelector(`.${styles.description}`);
+                        descriptionElement?.remove();
 
-                        // Snapped time accounting for overlap
-                        const finalTop = isDayColumn ? getFinalTop(topRaw, dayStartUnix!) : topRaw;
+                        // Set the text visual for time snapping
+                        let timeElement = placeholder?.querySelector(`.${styles.time}`) as HTMLElement | null;
 
-                        let skeletonTop: number | null = null;
-                        let skeletonHeight: number | null = null;
+                        if (!timeElement) {
+                            timeElement = document.createElement("span");
+                            timeElement.className = styles.time;
 
-                        if (timeBlock && timeBlock.duration > 0) {
-                            const descriptionElement = placeholder?.querySelector(`.${styles.description}`);
-                            descriptionElement?.remove();
+                            const nameElement = placeholder?.querySelector(`.${styles.name}`);
 
-                            // Set the text visual for time snapping
-                            let timeElement = placeholder?.querySelector(`.${styles.time}`) as HTMLElement | null;
-
-                            if (!timeElement) {
-                                timeElement = document.createElement("span");
-                                timeElement.className = styles.time;
-
-                                const nameElement = placeholder?.querySelector(`.${styles.name}`);
-
-                                if (nameElement?.parentNode) {
-                                    nameElement.parentNode.insertBefore(timeElement, nameElement.nextSibling);
-                                }
+                            if (nameElement?.parentNode) {
+                                nameElement.parentNode.insertBefore(timeElement, nameElement.nextSibling);
                             }
-
-                            let textDisplay = "";
-                            if (finalTop != null) {
-                                const { hour24, minute } = get24HourMinuteFromOffset(finalTop);
-                                const hourTime = new HourTime(hour24, minute);
-                                const endHourTime = hourTime.addMinutes(timeBlock.duration / 60);
-
-                                textDisplay = `${hourTime.Time12} - ${endHourTime.Time12WithSuffix}`;
-                            }
-
-                            if (isBacklog) {
-                                textDisplay = "Backlog";
-                            }
-
-                            if (isDayColumn) {
-                                skeletonTop = finalTop;
-                                skeletonHeight = timeBlock ? (HOUR_HEIGHT / 60) * (timeBlock.duration / 60) : null;
-                            }
-
-                            timeElement.textContent = textDisplay;
                         }
-                      
-                        const newMatch = {
-                            hoverId: id,
-                            taskTop: finalTop,
-                            skeletonTop: skeletonTop,
-                            skeletonHeight: skeletonHeight,
-                        };
 
-                        if (isWorkSession || !match) {
-                            match = newMatch;
+                        let textDisplay = "";
+                        if (finalTop != null) {
+                            const { hour24, minute } = get24HourMinuteFromOffset(finalTop);
+                            const hourTime = new HourTime(hour24, minute);
+                            const endHourTime = hourTime.addMinutes(timeBlock.duration / 60);
+
+                            textDisplay = `${hourTime.Time12} - ${endHourTime.Time12WithSuffix}`;
                         }
+
+                        if (isBacklog) {
+                            textDisplay = "Backlog";
+                        }
+
+                        if (isWorkSession) {
+                            textDisplay = "Work session";
+                        }
+
+                        if (isDayColumn) {
+                            skeletonTop = finalTop;
+                            skeletonHeight = timeBlock ? (HOUR_HEIGHT / 60) * (timeBlock.duration / 60) : null;
+                        }
+
+                        timeElement.textContent = textDisplay;
                     }
+                    
+                    match = {
+                        hoverId: id,
+                        taskTop: finalTop,
+                        skeletonTop,
+                        skeletonHeight,
+                    };
                 }
-            });
+            };
 
             const nextState: TaskDragState =
                 match ?? {
@@ -249,15 +256,20 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         },
     });
 
-    function getFinalTop(rawTop: number, dayStartUnix: number): number | null {
+    function getFinalTop(top: number, dayStartUnix: number): number | null {
         if (!timeBlock?.duration) {
             return null;
         }
 
-        const { hour24, minute } = get24HourMinuteFromOffset(rawTop);
+        const { hour24, minute } = get24HourMinuteFromOffset(top);
         const hourTime = new HourTime(hour24, minute);
 
-        const taskStartUnix = dayStartUnix + hourTime.toSecondsSince();
+        const dayEndUnix = dayStartUnix + 86400;
+        let taskStartUnix = dayStartUnix + hourTime.toSecondsSince();
+
+        if (taskStartUnix + timeBlock.duration > dayEndUnix) {
+            taskStartUnix = dayEndUnix - timeBlock.duration;
+        }
 
         const hasOverlap = timeBlockContext.hasCollision(
             taskStartUnix,
@@ -266,7 +278,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         );
 
         let potentialStartUnix: number | null = null;
-        
+
         if (hasOverlap) {
             potentialStartUnix = timeBlockContext.findClosestAvailableStart(
                 taskStartUnix,
@@ -274,7 +286,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                 task.id
             );
         }
-
+        
         if (hasOverlap && potentialStartUnix == null) {
             return null;
         }
@@ -285,6 +297,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         if (taskFinalSeconds < 0) return null;
 
         const finalTop = secondsToOffset(taskFinalSeconds);
+        // console.log("return final top", finalTop);
         return finalTop;
     }
 
@@ -310,6 +323,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         return (
             <div 
                 className={styles.task_wrapper}
+                data-hover-id={taskToKey(task)}
                 style={style}
                 onContextMenu={(e) => {
                     e.preventDefault();

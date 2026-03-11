@@ -332,6 +332,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                                         task={task!}
                                         timeBlock={timeBlock}
                                         calendarDate={calendarDate}
+                                        getScrollTop={getScrollTop}
                                         style={{
                                             position: "absolute",
                                             top: `${secondsToOffset(

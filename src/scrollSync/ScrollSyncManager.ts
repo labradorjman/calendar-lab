@@ -73,4 +73,10 @@ export class ScrollSyncManager {
             this.isSyncing = false;
         });
     }
+
+    syncAll(top: number) {
+        for (const [_, target] of this.targets) {
+            target.getScrollElement()?.scrollTo({ top });
+        }
+    }
 }

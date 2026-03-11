@@ -6,9 +6,8 @@ import { TaskDragState as TaskDragState, useTaskContext } from "@/taskContext";
 import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, secondsToOffset } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
-import { HEADER_HEIGHT, HOUR_HEIGHT, SNAP_MINUTES } from "@/constants/column";
+import { HEADER_HEIGHT, HOUR_HEIGHT } from "@/constants/column";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
-import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { deleteTask } from "@/services/taskService";
 import { removeTaskFromStore } from "@/store/tasks";
 import { TimeBlock } from "@/models/timeBlock";
@@ -23,7 +22,7 @@ interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     timeBlock?: TimeBlock;
     calendarDate?: CalendarDate;
     variant?: "default" | "backlogged";
-    getScrollTop?: () => number;
+    getScrollTop: () => number;
 }
 
 // Height of placeholder object
@@ -91,7 +90,8 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         onDragStart: (_, pointerY) => {
             if (!taskRef.current || taskContext.draggedTaskRef.current) return;
 
-            scrollDelta = getScrollTop?.() ?? 0;
+            scrollDelta = getScrollTop();
+
             hoverableRectsRef.current = Array.from(
                 document.querySelectorAll<HTMLElement>("[data-hover-id]")
             ).map(element => ({
@@ -130,7 +130,8 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
 
             let match: TaskDragState | null = null;
 
-            const currentScrollDelta = getScrollTop?.() ?? 0;
+            const currentScrollDelta = getScrollTop();
+                
             const taskLocalTop = Math.max(HEADER_HEIGHT, pointerY - placeHolderCenter) + currentScrollDelta;
             const localPointerY = taskLocalTop + placeHolderCenter;
             
@@ -144,7 +145,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                 const isBacklog = id === "backlog-column";
                 
                 const isColumn = isDayColumn || isBacklog;
-                const offset = isColumn ? 0 : scrollDelta;
+                const offset = isColumn ? 0 : (scrollDelta ?? 0);
 
                 const rectTop = rect.top + offset;
                 const rectBottom = rect.bottom + offset;
@@ -297,7 +298,6 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         if (taskFinalSeconds < 0) return null;
 
         const finalTop = secondsToOffset(taskFinalSeconds);
-        // console.log("return final top", finalTop);
         return finalTop;
     }
 

@@ -38,7 +38,7 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
     const draggedTaskRef = useRef<{ task: Task; timeBlock?: TimeBlock } | null>(null);
 
     // Hovered state ref
-    const hoveredtaskDragState = useRef<TaskDragState>({
+    const taskDragState = useRef<TaskDragState>({
         hoverId: null,
         taskTop: null,
             skeletonTop: null,
@@ -55,11 +55,11 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
     };
 
     const setTaskDragState = (partialState: Partial<TaskDragState>) => {
-        hoveredtaskDragState.current = {
-            ...hoveredtaskDragState.current,
+        taskDragState.current = {
+            ...taskDragState.current,
             ...partialState,
         };
-        hoveredSubscribers.current.forEach(cb => cb(hoveredtaskDragState.current));
+        hoveredSubscribers.current.forEach(cb => cb(taskDragState.current));
     };
 
     // Drag drop subscription
@@ -79,7 +79,7 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
         <TaskContext.Provider
             value={{
                 draggedTaskRef,
-                taskDragState: hoveredtaskDragState,
+                taskDragState,
                 setTaskDragState,
                 subscribeTaskDrag,
                 setTaskDropState,

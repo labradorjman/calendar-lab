@@ -109,7 +109,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         return { todayTimeBlocks: today };
     }, [timeBlocks]);
 
-    const scrollContext = useScrollSyncContext();
+    const scrollSyncContext = useScrollSyncContext();
     const taskContainerRef = useRef<HTMLDivElement>(null);
     const simpleBarRef = useRef<SimpleBarCore>(null);
 
@@ -117,12 +117,12 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         if (!simpleBarRef.current) return;
 
         const element = simpleBarRef.current.getScrollElement();
-        scrollContext.register(dateToKey(date), {
+        scrollSyncContext.register(dateToKey(date), {
             getScrollElement: () => element
         });
 
         const handler = () => {
-            scrollContext.syncFrom(dateToKey(date));
+            scrollSyncContext.syncFrom(dateToKey(date));
         };
 
         element?.addEventListener("scroll", handler);
@@ -261,7 +261,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
 
     const getScrollTop = useCallback(() => {
         return (
-            simpleBarRef.current
+            scrollSyncContext.get("time_column")
                 ?.getScrollElement()
                 ?.scrollTop ?? 0
         );

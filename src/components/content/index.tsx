@@ -57,6 +57,8 @@ export default function Content() {
 
             scrollSyncContext.relate(TIME_COLUMN_NAME, [dateToKey(date)]);
         });
+
+        scrollSyncContext.syncFrom(TIME_COLUMN_NAME);
     }, [calendarContext.dateRange]);
     
     return (

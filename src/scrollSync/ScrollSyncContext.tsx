@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useRef } from "react";
 import { ScrollSyncManager } from "@/scrollSync/ScrollSyncManager";
 
 interface ScrollSyncProviderProps {

@@ -47,26 +47,27 @@ export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnP
     const [timeString, setTimeString] = useState<string>("12:00");
 
     const taskContext = useTaskContext();
-    const manager = useScrollSyncContext();
+    const scrollSyncContext = useScrollSyncContext();
     const simpleBarRef = useRef<SimpleBarCore>(null);
 
     useEffect(() => {
         if (!simpleBarRef.current) return;
 
         const element = simpleBarRef.current.getScrollElement();
-        manager.register(TIME_COLUMN_NAME, {
+
+        scrollSyncContext.register(TIME_COLUMN_NAME, {
             getScrollElement: () => element
         });
 
         const handler = () => {
-            manager.syncFrom(TIME_COLUMN_NAME);
+            scrollSyncContext.syncFrom(TIME_COLUMN_NAME);
         };
 
         element?.addEventListener("scroll", handler);
 
         return () => {
             element?.removeEventListener("scroll", handler);
-            manager.unregister(TIME_COLUMN_NAME);
+            scrollSyncContext.unregister(TIME_COLUMN_NAME);
         };
     }, []);
 

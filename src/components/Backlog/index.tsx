@@ -2,7 +2,7 @@
 
 import styles from "@/components/Backlog/Backlog.module.scss";
 import Button from "@/ui/Button";
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Task } from "@/models/task";
 import TaskBlock from "@/components/tasks/TaskBlock";
 import SimpleBar from "simplebar-react";
@@ -14,6 +14,7 @@ import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuCont
 import { useCalendarContext } from "@/context";
 import { WorkSession } from "@/models/workSession";
 import { TimeBlock } from "@/models/timeBlock";
+import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 
 export default function Backlog() {
     const { openContextMenu } = useContextMenu();
@@ -31,6 +32,7 @@ export default function Backlog() {
     const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     const calendarContext = useCalendarContext();
+    const scrollSyncContext = useScrollSyncContext();
 
     useEffect(() => {
         async function fetchTasks() {
@@ -121,6 +123,14 @@ export default function Backlog() {
             timeBlock: timeBlockByKey.get(toKey("task", task.id))
         }));
 
+    const getScrollTop = useCallback(() => {
+        return (
+            scrollSyncContext.get("time_column")
+                ?.getScrollElement()
+                ?.scrollTop ?? 0
+        );
+    }, []);
+
     return (
         <div className={styles.backlog}>
             <div className={styles.header}>
@@ -159,6 +169,7 @@ export default function Backlog() {
                             task={t.task}
                             timeBlock={t.timeBlock}
                             variant="backlogged"
+                            getScrollTop={getScrollTop}
                         />
                     ))}
                 </SimpleBar>

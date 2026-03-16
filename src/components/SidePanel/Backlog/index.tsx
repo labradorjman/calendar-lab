@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "@/components/Backlog/Backlog.module.scss";
+import styles from "./Backlog.module.scss";
 import Button from "@/ui/Button";
 import { useCallback, useEffect, useMemo } from "react";
 import { Task } from "@/models/task";
@@ -28,38 +28,10 @@ export default function Backlog() {
 
     const taskContext = useTaskContext();
     const [tasks, updateTasks] = useCalendarStore("tasks");
-    const [_, updateWorkSessions] = useCalendarStore("work_sessions");
-    const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
+    const [timeBlocks] = useCalendarStore("time_blocks");
 
     const calendarContext = useCalendarContext();
     const scrollSyncContext = useScrollSyncContext();
-
-    useEffect(() => {
-        async function fetchTasks() {
-            const res = await fetch("/api/tasks");
-            const data: Task[] = await res.json();
-            
-            updateTasks(() => data);
-        }
-
-        async function fetchWorkSessions() {
-            const res = await fetch("/api/work-sessions");
-            const data: WorkSession[] = await res.json();
-
-            updateWorkSessions(() => data);
-        }
-
-        async function fetchTimeBlocks() {
-            const res = await fetch("/api/time-blocks");
-            const data: TimeBlock[] = await res.json();
-
-            updateTimeBlocks(() => data);
-        }
-
-        fetchTasks();
-        fetchWorkSessions();
-        fetchTimeBlocks();
-    }, []);
     
     useEffect(() => {
         if (!taskContext.subscribeDragDrop) return;
@@ -117,7 +89,7 @@ export default function Backlog() {
     }, [timeBlocks]);
 
     const visibleTaskTimeBlocks = tasks
-        .filter(task => task.isBacklogged)
+        .filter(task => task.isBacklogged && !task.workSessionId)
         .map(task => ({
             task,
             timeBlock: timeBlockByKey.get(toKey("task", task.id))

@@ -6,8 +6,8 @@
     font-size: var(--font_medium);
     padding: calc(1rem / 2) 1rem;
     margin: 0;
-    border-radius: 0.5rem;
-    background-color: #173a92;
+    border-radius: var(--gap_xsmall);
+    background-color: var(--primary);
     transition: all 150ms ease-in-out;
     z-index: 5;
 

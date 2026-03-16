@@ -18,6 +18,7 @@ body {
     --gap_small: 0.5rem;
     --gap_large: 1.5rem;
 
+    --primary: #173a92;
     --success: #44bb88;
     --danger: #ff4d4d;
     --warning: #eca832;
@@ -27,7 +28,9 @@ body {
 
     --accent: #2d3035;
 
-    --bg_dark: #121423;
+    --bg_darkblue: #121423;
+    --bg_dark: #0c0b16;
+    --bg_regular: #151420;
 }
 
 .simplebar-scrollbar::before {

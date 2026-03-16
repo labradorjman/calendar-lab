@@ -1,0 +1,26 @@
+.display {
+    .header {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+
+        .back_button {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+
+            font-size: var;
+            align-self: center;
+            padding: var(--gap_xsmall) var(--gap_small);
+            background: color-mix(in srgb, var(--primary), black 50%);
+
+            border-top-right-radius: var(--gap_xsmall);
+            border-bottom-right-radius: var(--gap_xsmall);
+        }
+    }
+}

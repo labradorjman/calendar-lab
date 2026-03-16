@@ -41,7 +41,7 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
     const taskDragState = useRef<TaskDragState>({
         hoverId: null,
         taskTop: null,
-            skeletonTop: null,
+        skeletonTop: null,
         skeletonHeight: null,
     });
 

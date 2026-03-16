@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "@/components/content/HourRow/HourRow.module.scss";
+import styles from "./HourRow.module.scss";
 import { HourTime } from "@/utils/Time/HourTime";
 
 interface HourRowProps {

@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "@/components/content/DayColumn/DayColumn.module.scss";
+import styles from "./DayColumn.module.scss";
 
 import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
@@ -19,7 +19,7 @@ import { TASK_MIN_DURATION_SECONDS } from "@/constants/limits";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
-import WorkSessionBlock from "../WorkSession";
+import WorkSessionBlock from "@/components/workSessions/WorkSessionBlock";
 import { dateToKey } from "@/utils/objectToKey";
 import { TimeBlock } from "@/models/timeBlock";
 import { Task } from "@/models/task";
@@ -148,9 +148,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     useEffect(() => {
         if (!taskContext.subscribeDragDrop) return;
 
-        const unsubscribe = taskContext.subscribeDragDrop(handleTaskDrop);
-
-        return () => unsubscribe();
+        return taskContext.subscribeDragDrop(handleTaskDrop);
     }, [taskContext, date]);
 
     const handleTaskDrop = async (state: TaskDragState) => {
@@ -369,7 +367,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                                         key={timeBlock.id}
                                         workSession={workSession}
                                         timeBlock={timeBlock}
-                                        tasks={tasksByWorkSessionId.get(workSession.id) ?? []}
+                                        sessionTasks={tasksByWorkSessionId.get(workSession.id) ?? []}
                                         style={{
                                             position: "absolute",
                                             top: `${secondsToOffset(

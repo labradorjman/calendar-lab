@@ -1,12 +1,11 @@
 "use client";
 
-import styles from "@/components/AppCalendar/AppCalendar.module.scss";
+import styles from "./AppCalendar.module.scss";
 
 import { useState } from "react";
 import { shiftMonth } from "@/utils/month";
 import { useCalendarContext } from "@/context";
 import { getMonthName } from "@/constants/calendar";
-import { getNextDates } from "@/utils/days";
 import Button from "@/ui/Button";
 import CalendarGrid from "@/ui/CalendarGrid";
 import { getYearMonthDay } from "@/utils/date";

@@ -1,16 +1,12 @@
 "use client";
 
-import styles from "@/components/content/TimeColumn/TimeColumn.module.scss";
+import styles from "./TimeColumn.module.scss";
 import HourRow from "@/components/content/HourRow";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import type SimpleBarCore from "simplebar-core";
 import { useEffect, useRef, useState } from "react";
 import SimpleBar from "simplebar-react";
 import { useTaskContext } from "@/taskContext";
-import { isValidYMD } from "@/utils/date";
-import { HEADER_HEIGHT, SNAP_MINUTES } from "@/constants/column";
-import { get24HourMinuteFromOffset } from "@/utils/time";
-import { HourTime } from "@/utils/Time/HourTime";
 
 interface TimeColumnProps {
     isHidden: boolean;

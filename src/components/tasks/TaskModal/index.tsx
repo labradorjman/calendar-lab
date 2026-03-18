@@ -1,16 +1,16 @@
-import Input from "@/ui/Input";
+import Input from "@/components/ui/Input";
 import styles from "./TaskModal.module.scss";
 
 import { useEffect, useRef, useState } from "react";
-import Button from "@/ui/Button";
+import Button from "@/components/ui/Button";
 import { createDefaultTask, isTaskEqual, type Task } from "@/models/task";
 
-import Checkbox from "@/ui/Checkbox";
+import Checkbox from "@/components/ui/Checkbox";
 import { useCalendarContext } from "@/context";
 import { createTask, updateTask } from "@/services/taskService";
 import Modal, { ModalProps } from "@/components/Modal";
-import DateSelector from "@/ui/DateSelector";
-import TimeInput from "@/ui/TimeInput";
+import DateSelector from "@/components/ui/DateSelector";
+import TimeInput from "@/components/ui/TimeInput";
 import { HourTime } from "@/utils/Time/HourTime";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { DATE_FORMAT, TIMEZONE } from "@/constants/calendar";

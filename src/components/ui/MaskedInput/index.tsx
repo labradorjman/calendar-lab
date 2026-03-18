@@ -2,7 +2,7 @@
 
 import React, { forwardRef, useCallback } from "react";
 import { useMask } from "@react-input/mask";
-import Input  from "@/ui/Input";
+import Input  from "@/components/ui/Input";
 
 interface MaskedInputProps
     extends Omit<

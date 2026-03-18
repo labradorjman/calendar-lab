@@ -34,7 +34,7 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
 
             const target = event.target as HTMLElement;
 
-            if (target.closest('[data-target="work_session"]')) {
+            if (target.closest('[data-target="side_panel"]')) {
                 return;
             }
 

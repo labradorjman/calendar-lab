@@ -2,30 +2,20 @@
 
 import { useCalendarContext } from "@/context";
 import styles from "./SelectedDisplay.module.scss";
-import Button from "@/ui/Button";
 
 export default function SelectedDisplay() {
     const calendarContext = useCalendarContext();
     const selection = calendarContext.workSessionSelection;
+    
+    if (selection == null) return null;
+
+    const { workSession, tasks } = selection;
 
     return (
-        <div
-            className={styles.display}
-            data-target={selection != null ? "work_session" : ""}
-        >
-            <div className={styles.header}>
-                <Button
-                    className={styles.back_button}
-                    element="button"
-                    size="sm"
-                    onClick={() => {
-                        calendarContext.setWorkSessionSelection(null);
-                    }}
-                >
-                    ←
-                </Button>
-                <span>{selection?.workSession.name ?? ""}</span>
-            </div>
+        <div className="w-full h-full">
+            <span className="truncate block w-full">
+                {workSession.name}
+            </span>
         </div>
     );
 }

@@ -1,0 +1,15 @@
+.icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background-color: currentColor;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+
+    &.sm { width: 16px; height: 16px; mask-size: 16px; -webkit-mask-size: 16px; }
+    &.md { width: 24px; height: 24px; mask-size: 24px; -webkit-mask-size: 24px; }
+    &.lg { width: 32px; height: 32px; mask-size: 32px; -webkit-mask-size: 32px; }
+}

@@ -2,7 +2,7 @@
 
 import styles from "./SegmentedControl.module.scss";
 
-import Button from "@/ui/Button";
+import Button from "@/components/ui/Button";
 
 interface SegmentedControlProps {
     className?: string;

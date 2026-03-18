@@ -3,7 +3,7 @@
 import styles from "./CalendarGrid.module.scss";
 
 import { forwardRef, useEffect, useState } from "react";
-import CalendarCell from "@/ui/CalendarCell";
+import CalendarCell from "@/components/ui/CalendarCell";
 import { useCalendarContext } from "@/context";
 import { YearMonthState } from "@/types/yearMonthState";
 import { dateToKey } from "@/utils/objectToKey";

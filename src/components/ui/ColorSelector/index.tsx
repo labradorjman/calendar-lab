@@ -1,6 +1,6 @@
 "use client";
 
-import Input from "@/ui/Input";
+import Input from "@/components/ui/Input";
 import styles from "./ColorSelector.module.scss";
 import { HexColorPicker } from "react-colorful";
 import { useEffect, useRef, useState } from "react";

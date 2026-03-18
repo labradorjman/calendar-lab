@@ -3,9 +3,9 @@
 import Modal, { ModalProps } from "@/components/Modal";
 import styles from "./WorkSessionModal.module.scss";
 import { createDefaultWorkSession, isTaskEqual, WorkSession } from "@/models/workSession";
-import Input from "@/ui/Input";
+import Input from "@/components/ui/Input";
 import { useEffect, useRef, useState } from "react";
-import Button from "@/ui/Button";
+import Button from "@/components/ui/Button";
 import { createWorkSession, deleteWorkSession, updateWorkSession } from "@/services/workSessionService";
 import { createTimeBlock } from "@/services/timeBlockService";
 import { removeWorkSessionFromStore } from "@/store/workSessions";
@@ -13,13 +13,13 @@ import { useCalendarContext } from "@/context";
 import { ParsedDateParts } from "@/types/dateFormat";
 import { ClearableHandle } from "@/types/componentHandles";
 import { HourTime } from "@/utils/Time/HourTime";
-import DateSelector from "@/ui/DateSelector";
-import TimeInput from "@/ui/TimeInput";
+import DateSelector from "@/components/ui/DateSelector";
+import TimeInput from "@/components/ui/TimeInput";
 import { TimeBlock } from "@/models/timeBlock";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { DATE_FORMAT, TIMEZONE } from "@/constants/calendar";
 import { parseIsoDateParts } from "@/utils/dateParser";
-import ColorSelector from "@/ui/ColorSelector";
+import ColorSelector from "@/components/ui/ColorSelector";
 import { handlePromise } from "@/utils/handleError";
 import { WORK_SESSION_MIN_DURATION_SECONDS } from "@/constants/limits";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import styles from "./Backlog.module.scss";
-import Button from "@/ui/Button";
+import Button from "@/components/ui/Button";
 import { useCallback, useEffect, useMemo } from "react";
 import { Task } from "@/models/task";
 import TaskBlock from "@/components/tasks/TaskBlock";

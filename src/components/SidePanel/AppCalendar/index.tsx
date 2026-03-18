@@ -6,8 +6,8 @@ import { useState } from "react";
 import { shiftMonth } from "@/utils/month";
 import { useCalendarContext } from "@/context";
 import { getMonthName } from "@/constants/calendar";
-import Button from "@/ui/Button";
-import CalendarGrid from "@/ui/CalendarGrid";
+import Button from "@/components/ui/Button";
+import CalendarGrid from "@/components/ui/CalendarGrid";
 import { getYearMonthDay } from "@/utils/date";
 
 interface YearMonthState {

@@ -3,8 +3,6 @@
 import styles from "./DateSelector.module.scss";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import Image from "next/image";
-import CalendarIcon from '@/assets/icons/calendar.webp';
 import { DATE_FORMAT, getMonthName, MAX_YEAR, MIN_YEAR } from "@/constants/calendar";
 import Button from "../Button";
 import MaskedInput from "../MaskedInput";
@@ -15,6 +13,7 @@ import { getDateStringFromDate, getSegmentsForFormat, getSlashPositions, getYear
 import { shiftMonth } from "@/utils/month";
 import { ClearableHandle } from "@/types/componentHandles";
 import { parseDateFromInput } from "@/utils/dateParser";
+import Icon from "@/components/ui/Icon";
 
 interface DateSelectorProps {
     defaultValue?: string;
@@ -288,13 +287,17 @@ const DateSelector = forwardRef<ClearableHandle, DateSelectorProps>(
                         size="min"
                         onClick={() => setShowCalendar((prev) => !prev)}
                     >
-                        <Image
+                        <Icon
+                            icon="calendar"
+                            size="sm"
+                        />
+                        {/* <Image
                             src={CalendarIcon}
                             alt="Calendar"
                             width={16}
                             height={16}
                             style={{ filter: "brightness(0) invert(1)" }}
-                        />
+                        /> */}
                     </Button>
                 </div>
                 {showCalendar && (

@@ -3,19 +3,14 @@
 import { useCalendarContext } from "@/context";
 import AppCalendar from "./AppCalendar";
 import styles from "./SidePanel.module.scss";
-import { useEffect, useRef, useState } from "react";
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator
-} from "@/ui/Breadcrumb";
+import { useEffect } from "react";
 import useCalendarStore from "@/store";
 import { Task } from "@/models/task";
 import { WorkSession } from "@/models/workSession";
 import { TimeBlock } from "@/models/timeBlock";
+import Button from "@/components/ui/Button";
+import Icon from "@/components/ui/Icon";
+import SelectedDisplay from "./SelectedDisplay";
 
 export default function SidePanel() {
     const calendarContext = useCalendarContext();
@@ -53,36 +48,24 @@ export default function SidePanel() {
     }, []);
     
     return (
-        <div className={styles.side_panel}>
+        <div className={styles.side_panel} data-target="side_panel">
             <AppCalendar />
-            <Breadcrumb>
-                <BreadcrumbList>
-
-                    <BreadcrumbItem>
-                        <BreadcrumbLink
-                            className={styles.backlog}
+            <div className={styles.divider} />
+                {selection != null && (
+                    <div className={styles.selection}>
+                        <Button
+                            element="button"
+                            variant="transparent"
+                            size="min"
                             onClick={() => calendarContext.setWorkSessionSelection(null)}
+                            className="flex items-center"
                         >
-                            Backlog
-                        </BreadcrumbLink>
-                    </BreadcrumbItem>
-
-                    {selection && (
-                    <>
-                        <BreadcrumbSeparator className={styles.separator}/>
-
-                        <BreadcrumbItem style={{ maxWidth: "165px" }}>
-                            <BreadcrumbPage
-                                className={styles.session}
-                            >
-                                {selection.workSession.name}
-                            </BreadcrumbPage>
-                        </BreadcrumbItem>
-                    </>
-                    )}
-
-                </BreadcrumbList>
-            </Breadcrumb>
+                            <Icon className="mr-2" icon="back_arrow" size="sm" />
+                            <span className="h-5 flex items-center">Back</span>
+                        </Button>
+                        <SelectedDisplay />
+                    </div>
+                )}
         </div>
     );
 }

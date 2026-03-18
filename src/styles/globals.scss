@@ -1,4 +1,5 @@
 @use "./fonts";
+@import "tailwindcss";
 
 body {
     font-family: "Satoshi-Medium", sans-serif !important;
@@ -28,8 +29,7 @@ body {
 
     --accent: #2d3035;
 
-    --bg_darkblue: #121423;
-    --bg_dark: #0c0b16;
+    --bg_dark: #121423;
     --bg_regular: #151420;
 }
 

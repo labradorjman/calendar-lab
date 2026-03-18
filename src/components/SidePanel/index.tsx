@@ -60,7 +60,11 @@ export default function SidePanel() {
                             onClick={() => calendarContext.setWorkSessionSelection(null)}
                             className="flex items-center"
                         >
-                            <Icon className="mr-2" icon="back_arrow" size="sm" />
+                            <Icon 
+                                className="mr-2"
+                                icon="back_arrow"
+                                size="sm"
+                            />
                             <span className="h-5 flex items-center">Back</span>
                         </Button>
                         <SelectedDisplay />

@@ -1,0 +1,45 @@
+.session_task {
+    display: grid;
+
+    grid-template-columns: 20px auto;
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+        "icon name"
+        "icon status";
+
+    user-select: none;
+    border-radius: var(--gap_xsmall);
+
+    &:hover {
+        background-color: #69696954;
+    }
+
+    .icon {
+        grid-area: icon;
+        align-self: center;
+        cursor: grab;
+
+        color: var(--button);
+
+        &:hover {
+            color: var(--button_hovered);
+        }
+
+        &:active {
+            cursor: grabbing;
+        }
+    }
+
+    .name {
+        grid-area: name;
+        font-family: "Satoshi-Regular", sans-serif;
+    }
+
+    .status {
+        grid-area: status;
+        font-family: "Satoshi-Regular", sans-serif;
+        font-size: var(--font_small);
+
+        color: var(--text_secondary);
+    }
+}

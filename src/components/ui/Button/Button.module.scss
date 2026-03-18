@@ -32,10 +32,11 @@
     }
     
     &[data-variant="transparent"] {
+        color: var(--button);
         background-color: unset;
 
         &:hover:not(&[disabled]) {
-            color: var(--text_secondary);
+            color: var(--button_hovered);
         }
     }
 

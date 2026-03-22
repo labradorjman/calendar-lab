@@ -1,5 +1,5 @@
 @use "./fonts";
-@import "tailwindcss";
+@use "tailwindcss";
 
 body {
     font-family: "Satoshi-Medium", sans-serif !important;
@@ -34,6 +34,10 @@ body {
 
     --bg_dark: #121423;
     --bg_regular: #151420;
+}
+
+body.grabbing * {
+    cursor: grabbing !important;
 }
 
 .simplebar-scrollbar::before {

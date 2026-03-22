@@ -71,7 +71,6 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
 
     const tzOffsetSeconds = calendarDate?.tzOffsetSeconds ?? 0;
     const taskRef = useRef<HTMLDivElement>(null);
-    const hoverablesRef = useRef<NodeListOf<HTMLElement> | null>(null);
     const hoverableRectsRef = useRef<
         { id: string; rect: DOMRect; dayStartUnix?: number; }[]
     >([]);
@@ -102,7 +101,6 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                     : undefined,
             }));
 
-            hoverablesRef.current = document.querySelectorAll("[data-hover-id]");
             taskContext.draggedTaskRef.current = { task, timeBlock }
 
             const rect = taskRef.current.getBoundingClientRect();

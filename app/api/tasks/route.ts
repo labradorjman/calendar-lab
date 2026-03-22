@@ -55,3 +55,23 @@ export async function POST(req: Request) {
         );
     }
 }
+
+export async function PATCH(req: Request) {
+    const updates: { id: number; orderIndex: number }[] = await req.json();
+    const tasks = await readJson<Task[]>(TASKS_FILE, []);
+    
+    const changedTasks: Task[] = [];
+    
+    const updatedTasks = tasks.map(task => {
+        const update = updates.find(u => u.id === task.id);
+        if (!update) return task;
+
+        const updated = { ...task, orderIndex: update.orderIndex };
+        changedTasks.push(updated);
+        
+        return updated;
+    });
+
+    await writeJson(TASKS_FILE, updatedTasks);
+    return Response.json(changedTasks);
+}

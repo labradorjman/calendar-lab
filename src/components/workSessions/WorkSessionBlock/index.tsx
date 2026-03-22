@@ -5,7 +5,7 @@ import { TimeBlock } from "@/models/timeBlock";
 import styles from "./WorkSession.module.scss";
 import { Task } from "@/models/task";
 import { useCalendarContext } from "@/context";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { workSessionToKey } from "@/utils/objectToKey";
 import { TaskDragState, useTaskContext } from "@/taskContext";
 import { handlePromise } from "@/utils/handleError";
@@ -24,6 +24,14 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
 
     const [tasks, updateTasks] = useCalendarStore("tasks");
     const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
+
+    const [sortedTasks, setSortedTasks] = useState(() =>
+        sessionTasks.toSorted((a, b) => a.orderIndex - b.orderIndex)
+    );
+
+    useEffect(() => {
+        setSortedTasks(sessionTasks.toSorted((a, b) => a.orderIndex - b.orderIndex));
+    }, [sessionTasks]);
 
     const blockRef = useRef<HTMLDivElement>(null);
     const hoveredRef = useRef<boolean>(false);
@@ -76,10 +84,15 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
             const taskId = taskContext.draggedTaskRef.current!.task.id;
             const taskTimeBlock = taskContext.draggedTaskRef.current!.timeBlock;
 
+            const orderIndex = sessionTasks.length > 0
+                ? Math.max(...sessionTasks.map(t => t.orderIndex)) + 1
+                : 0;
+
             const [response, error] = await handlePromise(
                 updateTask(taskId, {
                     task: {
                         workSessionId: workSession.id,
+                        orderIndex,
                         isBacklogged: false,
                     },
                     ...(taskTimeBlock?.startsAt
@@ -100,6 +113,7 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
                 updateTasks(prev => 
                     prev.map(t => t.id === response.task.id ? response.task : t)
                 );
+
                 if (response.timeBlock) {
                     updateTimeBlocks(prev =>
                         prev.map(tb => tb.id === response.timeBlock!.id ? response.timeBlock! : tb)
@@ -108,7 +122,6 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
             }
         }
     };
-
 
     return (
         <div
@@ -123,25 +136,19 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
                 calendarContext.setWorkSessionSelection({
                     workSession,
                     timeBlock,
-                    tasks
+                    tasks: sessionTasks,
                 });
             }}
         >
             <span>{workSession.name}</span>
             <div className={styles.task_container}>
-                {sessionTasks.map(task => {
+                {sortedTasks.map(task => {
                     return (
-                        <div
-                            key={task.id}
-                            className={styles.task}
-                        >
+                        <div key={task.id} className={styles.task}>
                             <span>{`• ${task.name}`}</span>
                         </div>
-
                     )
-                })
-
-                }
+                })}
             </div>
         </div>
     );

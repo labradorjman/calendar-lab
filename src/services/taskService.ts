@@ -31,6 +31,22 @@ export async function updateTask(
     return res.json();
 }
 
+type TaskOrderUpdate = Pick<Task, "id" | "orderIndex">;
+
+export async function updateTaskOrder(
+    request: TaskOrderUpdate[]
+): Promise<Task[]> {
+    const res = await fetch(`/api/tasks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+    });
+
+    if (!res.ok) throw new Error("Failed to update task order");
+
+    return res.json();
+}
+
 type CreateTaskRequest = {
     task: Omit<Task, "id">;
     timeBlock?: {

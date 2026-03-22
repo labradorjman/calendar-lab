@@ -86,38 +86,38 @@
     <circle
        style="fill:#000000;stroke:#000000;stroke-width:2;stroke-linecap:round"
        id="path6"
-       cx="5.9944425"
-       cy="2.9942341"
-       r="1.3330069" />
+       cx="6"
+       cy="3"
+       r="1" />
     <circle
        style="fill:#000000;stroke:#000000;stroke-width:2;stroke-linecap:round"
        id="circle7"
-       cx="14.008573"
-       cy="2.9919846"
-       r="1.3330069" />
+       cx="14"
+       cy="3"
+       r="1" />
     <circle
        style="fill:#000000;stroke:#000000;stroke-width:2;stroke-linecap:round"
        id="circle8"
-       cx="5.9941115"
-       cy="10.014488"
-       r="1.3330069" />
+       cx="6"
+       cy="10"
+       r="1" />
     <circle
        style="fill:#000000;stroke:#000000;stroke-width:2;stroke-linecap:round"
        id="circle9"
-       cx="13.997225"
-       cy="10.012239"
-       r="1.3330069" />
+       cx="14"
+       cy="10"
+       r="1" />
     <circle
        style="fill:#000000;stroke:#000000;stroke-width:2;stroke-linecap:round"
        id="circle10"
-       cx="5.9968271"
-       cy="16.998669"
-       r="1.3330069" />
+       cx="6"
+       cy="17"
+       r="1" />
     <circle
        style="fill:#000000;stroke:#000000;stroke-width:2;stroke-linecap:round"
        id="circle11"
-       cx="13.999939"
-       cy="16.99642"
-       r="1.3330069" />
+       cx="14"
+       cy="17"
+       r="1" />
   </g>
 </svg>

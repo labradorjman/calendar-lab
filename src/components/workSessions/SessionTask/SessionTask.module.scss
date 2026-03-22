@@ -14,19 +14,19 @@
         background-color: #69696954;
     }
 
+    &:hover .icon {
+        opacity: 1;
+    }
+
     .icon {
         grid-area: icon;
         align-self: center;
-        cursor: grab;
-
+        opacity: 0;
         color: var(--button);
 
         &:hover {
             color: var(--button_hovered);
-        }
-
-        &:active {
-            cursor: grabbing;
+            cursor: grab;
         }
     }
 
@@ -42,4 +42,42 @@
 
         color: var(--text_secondary);
     }
+}
+
+.drag_over_top,
+.drag_over_bottom {
+    position: relative;
+
+    &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: var(--success);
+    }
+}
+
+.session_task.dragging {
+    background-color: #69696954;
+    border-color: transparent;
+    
+    > * {
+        visibility: hidden;
+    }
+}
+
+.drag_over_top::after {
+    top: -5px;
+}
+
+.drag_over_bottom::after {
+    bottom: -5px;
+}
+
+.placeholder {
+    background-color: #2a2a2a;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.215);
+    border-radius: var(--gap_xsmall);
+    opacity: 0.75;
 }

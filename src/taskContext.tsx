@@ -46,12 +46,11 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
     });
 
     // Hovered subscription
-    const hoveredSubscribers = useRef<((state: TaskDragState) => void)[]>([]);
+    const hoveredSubscribers = useRef<Set<(state: TaskDragState) => void>>(new Set());
+
     const subscribeTaskDrag = (callback: (state: TaskDragState) => void) => {
-        hoveredSubscribers.current.push(callback);
-        return () => {
-            hoveredSubscribers.current = hoveredSubscribers.current.filter(cb => cb !== callback);
-        };
+        hoveredSubscribers.current.add(callback);
+        return () => hoveredSubscribers.current.delete(callback);
     };
 
     const setTaskDragState = (partialState: Partial<TaskDragState>) => {
@@ -63,12 +62,11 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
     };
 
     // Drag drop subscription
-    const dragDropSubscribers = useRef<((state: TaskDragState) => void)[]>([]);
+    const dragDropSubscribers = useRef<Set<(state: TaskDragState) => void>>(new Set());
+
     const subscribeDragDrop = (callback: (state: TaskDragState) => void) => {
-        dragDropSubscribers.current.push(callback);
-        return () => {
-            dragDropSubscribers.current = dragDropSubscribers.current.filter(cb => cb !== callback);
-        };
+        dragDropSubscribers.current.add(callback);
+        return () => dragDropSubscribers.current.delete(callback);
     };
 
     const setTaskDropState = (state: TaskDragState) => {

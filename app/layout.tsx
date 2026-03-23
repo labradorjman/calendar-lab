@@ -14,6 +14,7 @@ import { ContextMenuProvider } from "@/components/_layout/ContextMenu/ContextMen
 import { ContextMenuRenderer } from "@/components/_layout/ContextMenu/ContextMenuRenderer";
 import TimeBlockContextProvider from "@/timeBlockContext";
 import SidePanel from "@/components/SidePanel";
+import TimerProvider from "@/timerContext";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -47,19 +48,21 @@ export default function RootLayout({
                     initialSelectedDate={today}
                     initialDateRange={getNextDates(today, 5)}
                 >
-                    <TaskConextProvider>
-                        <ContextMenuProvider>
-                            <TimeBlockContextProvider>
-                                <div className={styles.layout}>
-                                    <ScrollSyncContextProvider>
-                                        <SidePanel />
-                                        <div className={styles.main_content}>{children}</div>      
-                                    </ScrollSyncContextProvider>
-                                </div>
-                            </TimeBlockContextProvider>
-                            <ContextMenuRenderer/>
-                        </ContextMenuProvider>
-                    </TaskConextProvider>
+                    <TimerProvider>
+                        <TaskConextProvider>
+                            <ContextMenuProvider>
+                                <TimeBlockContextProvider>
+                                    <div className={styles.layout}>
+                                        <ScrollSyncContextProvider>
+                                            <SidePanel />
+                                            <div className={styles.main_content}>{children}</div>      
+                                        </ScrollSyncContextProvider>
+                                    </div>
+                                </TimeBlockContextProvider>
+                                <ContextMenuRenderer/>
+                            </ContextMenuProvider>
+                        </TaskConextProvider>
+                    </TimerProvider>
                 </CalendarContextProvider>
             </body>
         </html>

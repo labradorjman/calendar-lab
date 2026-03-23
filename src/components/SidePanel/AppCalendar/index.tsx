@@ -2,13 +2,14 @@
 
 import styles from "./AppCalendar.module.scss";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { shiftMonth } from "@/utils/month";
 import { useCalendarContext } from "@/context";
 import { getMonthName } from "@/constants/calendar";
 import Button from "@/components/ui/Button";
 import CalendarGrid from "@/components/ui/CalendarGrid";
 import { getYearMonthDay } from "@/utils/date";
+import { useTimer } from "@/timerContext";
 
 interface YearMonthState {
     year: number;
@@ -17,6 +18,7 @@ interface YearMonthState {
 
 export default function AppCalendar() {
     const calendarContext = useCalendarContext();
+    const { onMinuteTick } = useTimer();
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -25,6 +27,12 @@ export default function AppCalendar() {
         year: today.getFullYear(),
         month: today.getMonth() + 1,
     });
+
+    useEffect(() => {
+        return onMinuteTick(unixSeconds => {
+            // Run per minute tick
+        });
+    }, [onMinuteTick]);
 
     function handleDateSelect(date: Date) {
         if(date === calendarContext.selectedDate) return;

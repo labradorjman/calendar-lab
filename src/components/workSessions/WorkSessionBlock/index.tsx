@@ -37,28 +37,6 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
     const hoveredRef = useRef<boolean>(false);
 
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (!blockRef.current) return;
-
-            const target = event.target as HTMLElement;
-
-            if (target.closest('[data-target="side_panel"]')) {
-                return;
-            }
-
-            if (!blockRef.current.contains(target)) {
-                calendarContext.setWorkSessionSelection(null);
-            }
-        }
-
-        document.addEventListener("mousedown", handleClickOutside);
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [calendarContext.setWorkSessionSelection]);
-
-    useEffect(() => {
         if (!taskContext.subscribeTaskDrag) return;
 
         return taskContext.subscribeTaskDrag(state => {

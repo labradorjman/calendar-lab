@@ -1,4 +1,7 @@
 export type TIcon =
     | "back_arrow"
     | "calendar"
-    | "drag";
+    | "drag"
+    | "edit"
+    | "tick"
+    | "x";

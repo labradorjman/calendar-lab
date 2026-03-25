@@ -15,6 +15,9 @@ const iconMap: Record<TIcon, string> = {
     back_arrow: "/assets/icons/back_arrow.svg",
     calendar: "/assets/icons/calendar.svg",
     drag: "/assets/icons/drag.svg",
+    edit: "/assets/icons/edit.svg",
+    tick: "/assets/icons/tick.svg",
+    x: "/assets/icons/x.svg",
 };
 
 const Icon = forwardRef<HTMLElement, IconProps>(

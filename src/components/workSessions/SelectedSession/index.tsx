@@ -7,11 +7,16 @@ import { useEffect, useState } from "react";
 import { updateTaskOrder } from "@/services/taskService";
 import { handlePromise } from "@/utils/handleError";
 import useCalendarStore from "@/store";
+import Button from "@/components/ui/Button";
+import Icon from "@/components/ui/Icon";
+import EditableSpan from "@/components/ui/EditableSpan";
+import { workSessionToKey } from "@/utils/objectToKey";
 
 export default function SelectedSession() {
     const calendarContext = useCalendarContext();
     const selection = calendarContext.workSessionSelection;
 
+    const [isEdit, setIsEdit] = useState(false);
     const [_, updateTasks] = useCalendarStore("tasks");
     
     if (selection == null) return null;
@@ -24,6 +29,32 @@ export default function SelectedSession() {
     useEffect(() => {
         setSortedTasks(tasks.toSorted((a, b) => a.orderIndex - b.orderIndex));
     }, [selection.workSession.id, selection.tasks]);
+
+    useEffect(() => {
+        setIsEdit(false);
+    }, [selection.workSession.id]);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (isEdit) return;
+
+            const target = event.target as HTMLElement;
+
+            if (target.closest('[data-target="side_panel"]') ||
+                target.closest(`[data-hover-id="${workSessionToKey(workSession)}"]`)
+            ) {
+                return;
+            }
+
+            calendarContext.setWorkSessionSelection(null);
+        }
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isEdit, calendarContext.setWorkSessionSelection]);
 
     const handleReorder = async (dragStartIndex: number, dragEndIndex: number) => {
         if (dragStartIndex === dragEndIndex) return;
@@ -67,13 +98,26 @@ export default function SelectedSession() {
                 })
             );
         }
-    }
+    };
 
     return (
         <div className="w-full h-full flex flex-col gap-2">
-            <span className="truncate block w-full">
-                {workSession.name}
-            </span>
+            <div className="flex flex-row gap-2 items-center">
+                <EditableSpan
+                    className={styles.session_name}
+                    value={workSession.name}
+                    editable={isEdit}
+                />
+                <Button
+                    className="right-0"
+                    element="button"
+                    variant="transparent"
+                    size="min"
+                    onClick={() => {setIsEdit(prev => !prev)}}
+                >
+                    <Icon icon="edit" size="sm" />
+                </Button>
+            </div>
             <div className="flex flex-col gap-2">
                 {sortedTasks.map(task => {
                     return (

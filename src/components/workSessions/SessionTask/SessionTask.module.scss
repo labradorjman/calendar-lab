@@ -1,11 +1,11 @@
 .session_task {
     display: grid;
 
-    grid-template-columns: 20px auto;
+    grid-template-columns: 20px auto 20px;
     grid-template-rows: 1fr auto;
     grid-template-areas:
-        "icon name"
-        "icon status";
+        "icon name button"
+        "icon status .";
 
     user-select: none;
     border-radius: var(--gap_xsmall);
@@ -14,7 +14,8 @@
         background-color: #69696954;
     }
 
-    &:hover .icon {
+    &:hover .icon,
+    &:hover .button {
         opacity: 1;
     }
 
@@ -35,12 +36,25 @@
         font-family: "Satoshi-Regular", sans-serif;
     }
 
+    .button {
+        grid-area: button;
+
+        display: flex;
+        align-self: center;
+
+        opacity: 0;
+    }
+
     .status {
         grid-area: status;
         font-family: "Satoshi-Regular", sans-serif;
         font-size: var(--font_small);
 
         color: var(--text_secondary);
+
+        &.completed {
+            color: var(--success);
+        }
     }
 }
 

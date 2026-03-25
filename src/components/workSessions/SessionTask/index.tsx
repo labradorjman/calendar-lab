@@ -13,7 +13,7 @@ interface SessionTaskProps {
 
 export default function SessionTask({ task, onDragDrop }: SessionTaskProps) {
     const status = task.isCompleted
-        ? `Completed · ${task.completedAt}`
+        ? `Completed`
         : `Incomplete`;
 
     const isDragHandle = useRef(false);
@@ -129,7 +129,18 @@ export default function SessionTask({ task, onDragDrop }: SessionTaskProps) {
                 }}
             />
             <span className={styles.name}>{task.name}</span>
-            <span className={styles.status}>{status}</span>
+            <span className={[
+                styles.status,
+                task.isCompleted ? styles.completed : ""]
+            .join(" ")}>
+                {status}
+            </span>
+
+            <Icon
+                className={styles.button}
+                icon="x"
+                size="sm"
+            />
         </div>
     );
 }

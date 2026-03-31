@@ -22,8 +22,8 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
     const calendarContext = useCalendarContext();
     const taskContext = useTaskContext();
 
-    const [tasks, updateTasks] = useCalendarStore("tasks");
-    const [timeBlocks, updateTimeBlocks] = useCalendarStore("time_blocks");
+    const [_, updateTasks] = useCalendarStore("tasks");
+    const [__, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     const [sortedTasks, setSortedTasks] = useState(() =>
         sessionTasks.toSorted((a, b) => a.orderIndex - b.orderIndex)
@@ -31,6 +31,14 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
 
     useEffect(() => {
         setSortedTasks(sessionTasks.toSorted((a, b) => a.orderIndex - b.orderIndex));
+
+        if (calendarContext.workSessionSelection?.workSession.id === workSession.id) {
+            calendarContext.setWorkSessionSelection({
+                workSession,
+                timeBlock,
+                tasks: sessionTasks,
+            });
+        }
     }, [sessionTasks]);
 
     const blockRef = useRef<HTMLDivElement>(null);

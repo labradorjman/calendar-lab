@@ -16,6 +16,7 @@ const iconMap: Record<TIcon, string> = {
     calendar: "/assets/icons/calendar.svg",
     drag: "/assets/icons/drag.svg",
     edit: "/assets/icons/edit.svg",
+    edit_pencil: "/assets/icons/edit_pencil.svg",
     tick: "/assets/icons/tick.svg",
     x: "/assets/icons/x.svg",
 };

@@ -31,18 +31,25 @@ export async function updateTask(
     return res.json();
 }
 
-type TaskOrderUpdate = Pick<Task, "id" | "orderIndex">;
+export type TaskPatch = {
+    id: number;
+    changes: Partial<Task>;
+};
 
-export async function updateTaskOrder(
-    request: TaskOrderUpdate[]
-): Promise<Task[]> {
+type PatchTasksRequest = TaskPatch[];
+
+type PatchTasksResponse = Task[] | null;
+
+export async function patchTasks(
+    request: PatchTasksRequest
+): Promise<PatchTasksResponse> {
     const res = await fetch(`/api/tasks`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),
     });
 
-    if (!res.ok) throw new Error("Failed to update task order");
+    if (!res.ok) throw new Error("Failed to patch tasks");
 
     return res.json();
 }

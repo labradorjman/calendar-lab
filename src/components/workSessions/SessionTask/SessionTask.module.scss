@@ -2,12 +2,12 @@
     display: grid;
 
     grid-template-columns: 20px auto 20px;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: 1fr 20px;
     grid-template-areas:
         "icon name button"
         "icon status .";
 
-    user-select: none;
+    // user-select: none;
     border-radius: var(--gap_xsmall);
 
     &:hover {
@@ -34,6 +34,7 @@
     .name {
         grid-area: name;
         font-family: "Satoshi-Regular", sans-serif;
+        font-size: var(--font_large) !important;
     }
 
     .button {
@@ -58,6 +59,57 @@
     }
 }
 
+// Edit
+.session_task.editing {
+    display: grid;
+    padding: var(--gap_small) 0;
+
+    grid-template-columns: 20px auto 24px;
+    grid-template-rows: 1fr;
+    grid-template-areas: "icon name button";
+
+    user-select: text;
+    border-radius: var(--gap_xsmall);
+    background-color: #69696954;
+
+    .icon {
+        grid-area: icon;
+        align-self: center;
+        color: var(--button);
+        opacity: 1;
+
+        &:hover {
+            color: var(--button_hovered);
+            cursor: grab;
+        }
+    }
+
+    .name {
+        grid-area: name;
+        font-family: "Satoshi-Regular", sans-serif;
+        font-size: var(--font_large) !important;
+
+        display: flex;
+        align-self: center;
+
+        margin-right: var(--gap_xsmall);
+    }
+
+    .button {
+        grid-area: button;
+        display: flex;
+        align-self: center;
+        justify-content: center;
+        padding: 0 var(--gap_xsmall);
+        opacity: 1;
+    }
+
+    .status {
+        display: none;
+    }
+}
+
+// External drag trigger
 .drag_over_top,
 .drag_over_bottom {
     position: relative;
@@ -72,6 +124,7 @@
     }
 }
 
+// Drag logic
 .session_task.dragging {
     background-color: #69696954;
     border-color: transparent;

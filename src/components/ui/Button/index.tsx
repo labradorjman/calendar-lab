@@ -15,6 +15,8 @@ type IBaseButton = (
     size?: "sm" | "md" | "lg" | "min";
     variant?:
         | "primary"
+        | "ghost"
+        | "outline"
         | "transparent"
     disabled?: boolean;
     children?: React.ReactNode | string;

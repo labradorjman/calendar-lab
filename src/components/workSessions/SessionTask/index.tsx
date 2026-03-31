@@ -5,16 +5,24 @@ import styles from "./SessionTask.module.scss";
 import Icon from "@/components/ui/Icon";
 import { useClickDrag } from "@/hooks/useClickDrag";
 import { useRef } from "react";
+import EditableSpan from "@/components/ui/EditableSpan";
+import Button from "@/components/ui/Button";
+import { handlePromise } from "@/utils/handleError";
+import { updateTask } from "@/services/taskService";
+import useCalendarStore from "@/store";
 
 interface SessionTaskProps {
     task: Task;
     onDragDrop: (dragStartIndex: number, dragEndIndex: number) => void;
+    isEdit: boolean;
 }
 
-export default function SessionTask({ task, onDragDrop }: SessionTaskProps) {
+export default function SessionTask({ task, onDragDrop, isEdit }: SessionTaskProps) {
     const status = task.isCompleted
         ? `Completed`
         : `Incomplete`;
+
+    const [_, updateTasks] = useCalendarStore("tasks");
 
     const isDragHandle = useRef(false);
     const taskRef = useRef<HTMLDivElement>(null);
@@ -107,10 +115,34 @@ export default function SessionTask({ task, onDragDrop }: SessionTaskProps) {
         },
     });
 
+    const handleCompleteToggle = async () => {
+        console.log("complete button");
+        const newState = !task.isCompleted;
+        const [response, error] = await handlePromise(
+            updateTask(task.id, {
+                task: {
+                    isCompleted: newState,
+                    completedAt: newState
+                        ? new Date().toISOString()
+                        : null
+                }
+            })
+        );
+
+        if (!response) {
+            console.error(`[SessionTask] Error toggling complete state - task [${task.id}]:`, error);
+            return;
+        }
+
+        updateTasks(prev => 
+            prev.map(t => t.id === response.task.id ? response.task : t)
+        );
+    }
+
     return (
         <div
             ref={taskRef}
-            className={styles.session_task}
+            className={`${styles.session_task} ${isEdit ? styles.editing : ""}`}
             data-session-order={task.orderIndex}
         >
             <Icon
@@ -128,19 +160,32 @@ export default function SessionTask({ task, onDragDrop }: SessionTaskProps) {
                     document.addEventListener("pointerup", onPointerUp);
                 }}
             />
-            <span className={styles.name}>{task.name}</span>
+            <EditableSpan
+                className={styles.session_name}
+                value={task.name}
+                editable={isEdit}
+            />
             <span className={[
                 styles.status,
                 task.isCompleted ? styles.completed : ""]
             .join(" ")}>
                 {status}
             </span>
-
-            <Icon
-                className={styles.button}
-                icon="x"
-                size="sm"
-            />
+            
+            <div className={styles.button}>
+                <Button
+                    element="button"
+                    variant="transparent"
+                    size="min"
+                    onClick={handleCompleteToggle}
+                >
+                    {isEdit ? (
+                        <Icon icon="x" size="sm" />
+                    ) : (
+                        <Icon icon="tick" size="sm"/>
+                    )}
+                </Button>
+            </div>
         </div>
     );
 }

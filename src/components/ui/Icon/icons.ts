@@ -3,5 +3,6 @@ export type TIcon =
     | "calendar"
     | "drag"
     | "edit"
+    | "edit_pencil"
     | "tick"
     | "x";

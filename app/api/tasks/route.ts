@@ -4,6 +4,7 @@ import { Task } from "@/models/task";
 import { readJson, writeJson } from "@/utils/storage/file";
 import { getNextId } from "@/utils/storage/meta";
 import { TimeBlock } from "@/models/timeBlock";
+import { TaskPatch } from "@/services/taskService";
 
 export async function GET() {
     const tasks = await readJson<Task[]>(TASKS_FILE, []);
@@ -57,18 +58,21 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-    const updates: { id: number; orderIndex: number }[] = await req.json();
-    const tasks = await readJson<Task[]>(TASKS_FILE, []);
+    const patches: TaskPatch[] = await req.json();
     
-    const changedTasks: Task[] = [];
-    
-    const updatedTasks = tasks.map(task => {
-        const update = updates.find(u => u.id === task.id);
-        if (!update) return task;
+    if (!patches.length) return Response.json([]);
 
-        const updated = { ...task, orderIndex: update.orderIndex };
+    const patchMap = new Map(patches.map(p => [p.id, p.changes]));
+    const tasks = await readJson<Task[]>(TASKS_FILE, []);
+
+    const changedTasks: Task[] = [];
+
+    const updatedTasks = tasks.map(task => {
+        const changes = patchMap.get(task.id);
+        if (!changes) return task;
+
+        const updated = { ...task, ...changes };
         changedTasks.push(updated);
-        
         return updated;
     });
 

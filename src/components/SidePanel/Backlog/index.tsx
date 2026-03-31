@@ -3,7 +3,6 @@
 import styles from "./Backlog.module.scss";
 import Button from "@/components/ui/Button";
 import { useCallback, useEffect, useMemo } from "react";
-import { Task } from "@/models/task";
 import TaskBlock from "@/components/tasks/TaskBlock";
 import SimpleBar from "simplebar-react";
 import { TaskDragState, useTaskContext } from "@/taskContext";
@@ -59,7 +58,7 @@ export default function Backlog() {
             );
 
             if (!response) {
-                console.error(`Error updating task [${taskId}]:`, error);
+                console.error(`[Backlog] Error updating task [${taskId}]:`, error);
                 return;
             }
 

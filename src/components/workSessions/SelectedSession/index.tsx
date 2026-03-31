@@ -4,7 +4,7 @@ import { useCalendarContext } from "@/context";
 import styles from "./SelectedSession.module.scss";
 import SessionTask from "@/components/workSessions/SessionTask";
 import { useEffect, useState } from "react";
-import { updateTaskOrder } from "@/services/taskService";
+import { patchTasks } from "@/services/taskService";
 import { handlePromise } from "@/utils/handleError";
 import useCalendarStore from "@/store";
 import Button from "@/components/ui/Button";
@@ -35,9 +35,9 @@ export default function SelectedSession() {
     }, [selection.workSession.id]);
 
     useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (isEdit) return;
+        if (isEdit) return;
 
+        function handleClickOutside(event: MouseEvent) {
             const target = event.target as HTMLElement;
 
             if (target.closest('[data-target="side_panel"]') ||
@@ -72,18 +72,23 @@ export default function SelectedSession() {
             return task;
         }).toSorted((a, b) => a.orderIndex - b.orderIndex);
 
-        const changes = reordered
+        const orderChanges = reordered
             .filter(task => {
                 const original = sortedTasks.find(p => p.id === task.id);
                 return task.orderIndex !== original?.orderIndex;
             })
-            .map(t => ({ id: t.id, orderIndex: t.orderIndex }));
+            .map(t => ({
+                id: t.id,
+                changes: {
+                    orderIndex: t.orderIndex
+                }
+            }));
 
         setSortedTasks(reordered);
 
-        if (changes.length > 0) {
+        if (orderChanges.length > 0) {
             const [updatedTasks, error] = await handlePromise(
-                updateTaskOrder(changes)
+                patchTasks(orderChanges)
             );
 
             if (!updatedTasks) {
@@ -108,15 +113,28 @@ export default function SelectedSession() {
                     value={workSession.name}
                     editable={isEdit}
                 />
-                <Button
-                    className="right-0"
-                    element="button"
-                    variant="transparent"
-                    size="min"
-                    onClick={() => {setIsEdit(prev => !prev)}}
-                >
-                    <Icon icon="edit" size="sm" />
-                </Button>
+                {!isEdit ? (
+                    <Button
+                        className="right-0"
+                        element="button"
+                        variant="outline"
+                        size="min"
+                        onClick={() => {setIsEdit(prev => !prev)}}
+                    >
+                        <Icon icon="edit_pencil" size="sm" />
+                    </Button>
+                    ) : (
+                        <Button
+                            className="right-0"
+                            element="button"
+                            variant="outline"
+                            size="min"
+                            onClick={() => {setIsEdit(prev => !prev)}}
+                        >
+                            <Icon icon="tick" size="sm" />
+                        </Button>
+                    )
+                }
             </div>
             <div className="flex flex-col gap-2">
                 {sortedTasks.map(task => {
@@ -125,6 +143,7 @@ export default function SelectedSession() {
                             key={task.id}
                             task={task}
                             onDragDrop={handleReorder}
+                            isEdit={isEdit}
                         />
                     );
                 })}

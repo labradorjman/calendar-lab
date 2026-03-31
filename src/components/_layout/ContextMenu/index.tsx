@@ -68,8 +68,8 @@ export function ContextMenu({
                 key={item.id}
                 className={styles.item}
                 onClick={() => {
-                item.onSelect();
-                onClose();
+                    item.onSelect();
+                    onClose();
                 }}
             >
                 {item.label}

@@ -10,17 +10,18 @@
     font-size: 14px;
     color: var(--color-text-primary);
     line-height: 1.5;
-    padding: 2px 6px;
+    padding: 2px 0;
     border-radius: var(--gap_xsmall);
-    border: 2px solid transparent;
+    border: none;
     outline: none;
-    background: transparent;
+    background-color: transparent;
     cursor: text;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     box-sizing: border-box;
-    transition: border-color 0.15s ease, background 0.15s ease;
+
+    transition: padding 0.2s ease, background-color 0.2s ease;
 
     &:empty::before {
         content: attr(data-placeholder);
@@ -29,13 +30,14 @@
     }
 
     &:hover {
-        border-color: #80808026;
-        background: var(--color-background-secondary);
+        padding: 2px 6px;
+        background-color: rgb(32, 32, 32);
     }
 
     &.focused {
-        border-color: var(--accent);
-        background: var(--color-background-primary);
+        padding: 2px 6px;
+        border: 1px solid var(--accent);
+        background-color: rgb(32, 32, 32);
         overflow: scroll;
         text-overflow: clip;
         scrollbar-width: none;
@@ -45,13 +47,13 @@
         }
     }
 
-    &.readOnly {
+    &.read_only {
+        padding-left: 0;
+        padding-right: 0;
         cursor: default;
         pointer-events: none;
 
-        &:hover {
-            border-color: transparent;
-            background: transparent;
-        }
+        border-color: transparent;
+        background: transparent;
     }
 }

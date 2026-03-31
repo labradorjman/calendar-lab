@@ -6,7 +6,7 @@
     font-size: var(--font_medium);
     padding: calc(1rem / 2) 1rem;
     margin: 0;
-    border-radius: var(--gap_xsmall);
+    border-radius: var(--gap_small);
     background-color: var(--primary);
     transition: all 150ms ease-in-out;
     z-index: 5;
@@ -40,6 +40,27 @@
         }
     }
 
+    &[data-variant="ghost"] {
+        background-color: transparent;
+        color: var(--button);
+
+        &:hover:not(&[disabled]) {
+            background-color: rgba(255, 255, 255, 0.144);
+            color: var(--button_hovered);
+        }
+}
+
+    &[data-variant="outline"] {
+        background-color: transparent;
+        border: 2px solid var(--button);
+        color: var(--button);
+
+        &:hover:not(&[disabled]) {
+            border-color: var(--button_hovered);
+            color: var(--button_hovered);
+        }
+    }
+
     &--sm {
         padding: 0.25rem 0.5rem;
     }
@@ -53,9 +74,18 @@
     }
 
     &--min {
-        padding: 0;
+        padding: 4px;
         width: fit-content;
         height: fit-content;
         line-height: 0;
+
+        &[data-variant="outline"] {
+            border-radius: 6px;
+            padding: 2px;
+        }
+
+        &[data-variant="transparent"] {
+            padding: 0;
+        }
     }
 }

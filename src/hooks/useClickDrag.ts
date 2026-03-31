@@ -30,6 +30,8 @@ export function useClickDrag(
         if(!element) return;
 
         const onPointerDown = (e: PointerEvent) => {
+            if ((e.target as HTMLElement).closest('button, a, input, [contenteditable]')) return;
+
             state.current = {
                 startX: e.clientX,
                 startY: e.clientY,

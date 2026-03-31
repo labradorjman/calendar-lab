@@ -226,8 +226,8 @@ export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, o
         const [response, error] = await handlePromise(
             updateTask(modal.task.id, {
                 task: {
-                ...task,
-                ...(startsAt === null ? { isBacklogged: true } : {}),
+                    ...task,
+                    ...(startsAt === null ? { isBacklogged: true } : {}),
                 },
                 timeBlock: timeBlockPayload,
             })

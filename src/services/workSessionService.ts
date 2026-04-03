@@ -19,7 +19,7 @@ export async function updateWorkSession(
     id: number,
     request: UpdateWorkSessionRequest
 ): Promise<UpdateWorkSessionResponse> {
-    const res = await fetch(`/api/work-session/${id}`, {
+    const res = await fetch(`/api/work-sessions/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(request),

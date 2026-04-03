@@ -14,6 +14,7 @@
     "@react-input/mask": "^2.0.4",
     "@tanstack/react-store": "^0.8.0",
     "date-fns": "^4.1.0",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.577.0",
     "next": "^16.1.6",
     "react": "19.2.3",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/lodash": "^4.17.24",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCalendarContext } from "@/context";
 import AppCalendar from "./AppCalendar";
 import styles from "./SidePanel.module.scss";
 import { useEffect } from "react";
 import useCalendarStore from "@/store";
+import { useWorkSessionContext } from "@/workSessionContext";
 import { Task } from "@/models/task";
 import { WorkSession } from "@/models/workSession";
 import { TimeBlock } from "@/models/timeBlock";
@@ -13,9 +13,9 @@ import Icon from "@/components/ui/Icon";
 import SelectedSession from "@/components/workSessions/SelectedSession";
 import Backlog from "./Backlog";
 
+
 export default function SidePanel() {
-    const calendarContext = useCalendarContext();
-    const selection = calendarContext.workSessionSelection;
+    const { deselect, isSelected } = useWorkSessionContext();
 
     const [_, updateTasks] = useCalendarStore("tasks");
     const [__, updateWorkSessions] = useCalendarStore("work_sessions");
@@ -52,16 +52,16 @@ export default function SidePanel() {
         <div className={styles.side_panel} data-target="side_panel">
             <AppCalendar />
             <div className={styles.divider} />
-            {selection != null ? (
+            {isSelected ? (
                 <div className={styles.selection}>
                     <Button
                         element="button"
                         variant="transparent"
                         size="min"
-                        onClick={() => calendarContext.setWorkSessionSelection(null)}
+                        onClick={() => deselect}
                         className="flex items-center"
                     >
-                        <Icon 
+                        <Icon
                             className="mr-2"
                             icon="back_arrow"
                             size="sm"

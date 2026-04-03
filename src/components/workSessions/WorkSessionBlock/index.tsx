@@ -4,7 +4,7 @@ import { WorkSession } from "@/models/workSession";
 import { TimeBlock } from "@/models/timeBlock";
 import styles from "./WorkSession.module.scss";
 import { Task } from "@/models/task";
-import { useCalendarContext } from "@/context";
+import { useWorkSessionContext } from "@/workSessionContext";
 import { useEffect, useRef, useState } from "react";
 import { workSessionToKey } from "@/utils/objectToKey";
 import { TaskDragState, useTaskContext } from "@/taskContext";
@@ -19,7 +19,7 @@ interface WorkSessionProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks, style, ...props }: WorkSessionProps) {
-    const calendarContext = useCalendarContext();
+    const { select, workSession: selectedSession } = useWorkSessionContext();
     const taskContext = useTaskContext();
 
     const [_, updateTasks] = useCalendarStore("tasks");
@@ -32,12 +32,9 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
     useEffect(() => {
         setSortedTasks(sessionTasks.toSorted((a, b) => a.orderIndex - b.orderIndex));
 
-        if (calendarContext.workSessionSelection?.workSession.id === workSession.id) {
-            calendarContext.setWorkSessionSelection({
-                workSession,
-                timeBlock,
-                tasks: sessionTasks,
-            });
+        // Refresh the display when a task gets updated
+        if (selectedSession?.id === workSession.id) {
+            select({ workSession, timeBlock, tasks: sessionTasks });
         }
     }, [sessionTasks]);
 
@@ -119,7 +116,7 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
                 "--session-bg": workSession.color,
             } as React.CSSProperties}
             onClick={() => {
-                calendarContext.setWorkSessionSelection({
+                select({
                     workSession,
                     timeBlock,
                     tasks: sessionTasks,

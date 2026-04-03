@@ -25,11 +25,20 @@ export default function EditableSpan({
 
     useEffect(() => {
         if (editable) return;
+
         const element = spanRef.current;
         if (!element) return;
+
         window.getSelection()?.removeAllRanges();
         element.scrollLeft = 0;
     }, [editable]);
+
+    
+    useEffect(() => {
+        if (spanRef.current && !isFocused) {
+            spanRef.current.textContent = value;
+        }
+    }, [value, isFocused]);
 
     const handleFocus = useCallback(() => {
         originalValue.current = spanRef.current?.textContent ?? value;
@@ -71,6 +80,8 @@ export default function EditableSpan({
         setIsFocused(false);
         isSelectAll.current = false;
         const newValue = spanRef.current?.textContent?.trim() ?? '';
+
+        // Prevent empty text
         if (newValue === '') {
             if (spanRef.current) spanRef.current.textContent = originalValue.current;
             return;

@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import { handlePromise } from "@/utils/handleError";
 import { updateTask } from "@/services/taskService";
 import useCalendarStore from "@/store";
+import { useWorkSessionContext } from "@/workSessionContext";
 
 interface SessionTaskProps {
     task: Task;
@@ -21,6 +22,8 @@ export default function SessionTask({ task, onDragDrop, isEdit }: SessionTaskPro
     const status = task.isCompleted
         ? `Completed`
         : `Incomplete`;
+
+    const { push } = useWorkSessionContext();
 
     const [_, updateTasks] = useCalendarStore("tasks");
 
@@ -164,6 +167,7 @@ export default function SessionTask({ task, onDragDrop, isEdit }: SessionTaskPro
                 className={styles.session_name}
                 value={task.name}
                 editable={isEdit}
+                onChange={(value) => push({ type: "TASK_NAME", taskId: task.id, value })}
             />
             <span className={[
                 styles.status,
@@ -173,18 +177,27 @@ export default function SessionTask({ task, onDragDrop, isEdit }: SessionTaskPro
             </span>
             
             <div className={styles.button}>
-                <Button
-                    element="button"
-                    variant="transparent"
-                    size="min"
-                    onClick={handleCompleteToggle}
-                >
-                    {isEdit ? (
+                {isEdit ? (
+                    <Button
+                        element="button"
+                        variant="transparent"
+                        size="min"
+                        onClick={() => push({ type: "TASK_DELETE", taskId: task.id })}
+                    >
                         <Icon icon="x" size="sm" />
-                    ) : (
+                    </Button>
+                ) : (
+                    <Button
+                        element="button"
+                        variant="transparent"
+                        size="min"
+                        onClick={handleCompleteToggle}
+                    >
                         <Icon icon="tick" size="sm"/>
-                    )}
-                </Button>
+                    </Button>
+                )}
+
+
             </div>
         </div>
     );

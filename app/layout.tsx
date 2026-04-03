@@ -6,15 +6,14 @@ import styles from "./layout.module.scss";
 
 import CalendarContextProvider from "@/context";
 import { getNextDates } from "@/utils/days";
-import AppCalendar from "@/components/SidePanel/AppCalendar";
-import Backlog from "@/components/SidePanel/Backlog";
-import ScrollSyncContextProvider from "@/scrollSync/ScrollSyncContext";
 import TaskConextProvider from "@/taskContext";
 import { ContextMenuProvider } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { ContextMenuRenderer } from "@/components/_layout/ContextMenu/ContextMenuRenderer";
-import TimeBlockContextProvider from "@/timeBlockContext";
 import SidePanel from "@/components/SidePanel";
 import TimerProvider from "@/timerContext";
+import WorkSessionContextProvider from "@/workSessionContext";
+import ScrollSyncContextProvider from "@/scrollSync/ScrollSyncContext";
+import TimeBlockContextProvider from "@/timeBlockContext";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -50,17 +49,19 @@ export default function RootLayout({
                 >
                     <TimerProvider>
                         <TaskConextProvider>
-                            <ContextMenuProvider>
-                                <TimeBlockContextProvider>
-                                    <div className={styles.layout}>
-                                        <ScrollSyncContextProvider>
-                                            <SidePanel />
-                                            <div className={styles.main_content}>{children}</div>      
-                                        </ScrollSyncContextProvider>
-                                    </div>
-                                </TimeBlockContextProvider>
-                                <ContextMenuRenderer/>
-                            </ContextMenuProvider>
+                            <WorkSessionContextProvider>
+                                <ContextMenuProvider>
+                                    <ScrollSyncContextProvider>
+                                        <TimeBlockContextProvider>
+                                            <div className={styles.layout}>
+                                                <SidePanel />
+                                                <div className={styles.main_content}>{children}</div>      
+                                            </div>
+                                        </TimeBlockContextProvider>
+                                    </ScrollSyncContextProvider>
+                                    <ContextMenuRenderer/>
+                                </ContextMenuProvider>
+                            </WorkSessionContextProvider>
                         </TaskConextProvider>
                     </TimerProvider>
                 </CalendarContextProvider>

@@ -11,7 +11,6 @@ import useCalendarStore from "@/store";
 import { handlePromise } from "@/utils/handleError";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
-import { WorkSession } from "@/models/workSession";
 import { TimeBlock } from "@/models/timeBlock";
 import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 

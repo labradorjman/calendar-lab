@@ -11,6 +11,7 @@
     overflow: hidden;
 
     padding: var(--gap_small);
+    gap: var(--gap_small);
     
     > :first-child {
         height: auto;
@@ -28,8 +29,8 @@
         flex-direction: column;
         gap: var(--gap_small);
         flex: 1;
+        min-height: 0;
 
-        padding-top: var(--gap_small);
         box-sizing: border-box;
     }
 }

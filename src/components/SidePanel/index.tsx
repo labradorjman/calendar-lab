@@ -58,7 +58,7 @@ export default function SidePanel() {
                         element="button"
                         variant="transparent"
                         size="min"
-                        onClick={() => deselect}
+                        onClick={deselect}
                         className="flex items-center"
                     >
                         <Icon

@@ -1,6 +1,7 @@
 .backlog {
     display: flex;
     flex-direction: column;
+    flex: 1;
     min-height: 0;
     
     gap: var(--gap_small);

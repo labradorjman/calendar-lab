@@ -1,6 +1,6 @@
 import { Task } from "@/models/task";
-import styles from "./Task.module.scss";
-import { useEffect, useRef } from "react";
+import styles from "./TaskBlock.module.scss";
+import {  useRef } from "react";
 import { useClickDrag } from "@/hooks/useClickDrag";
 import { TaskDragState as TaskDragState, useTaskContext } from "@/taskContext";
 import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, secondsToOffset } from "@/utils/time";
@@ -300,6 +300,15 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         return finalTop;
     }
 
+    function formatDuration(seconds: number): string {
+        const h = Math.floor(seconds / 3600)
+        const m = Math.floor((seconds % 3600) / 60)
+
+        if (h === 0) return `${m}m`
+        if (m === 0) return `${h}h`
+        return `${h}h ${m}m`
+    }
+
     const startUnix = timeBlock?.startsAt
         ? postgresTimestamptzToUnix(timeBlock.startsAt)
         : null;
@@ -346,7 +355,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                     )}
 
                     {timeBlock && timeBlock.duration !== 0 && (
-                        <span className={styles.duration}>{(timeBlock.duration / 60)} mins</span>
+                        <span className={styles.duration}>{formatDuration(timeBlock.duration)}</span>
                     )}
                 </div>
             </div>
@@ -376,7 +385,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             <span className={styles.name}>{task.name}</span>
             <span className={styles.description}>{task.description}</span>
             {timeBlock && timeBlock.duration !== 0 && (
-                <span className={styles.duration}>{(timeBlock.duration / 60)} mins</span>
+                <span className={styles.duration}>{formatDuration(timeBlock.duration)}</span>
             )}
         </div>
     );

@@ -26,7 +26,7 @@ interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 // Height of placeholder object
-const FIXED_PLACEHOLDER_HEIGHT = 80;
+const FIXED_PLACEHOLDER_HEIGHT = 85;
 
 export default function TaskBlock({ task, timeBlock, calendarDate, variant = "default", getScrollTop, style, ...props }: TaskProps) {
     const calendarContext = useCalendarContext();

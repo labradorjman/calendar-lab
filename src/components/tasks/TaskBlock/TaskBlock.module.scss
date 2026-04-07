@@ -1,4 +1,4 @@
-$bg-color: #1390a0;
+$bg-color: #693a85;
 
 .task_wrapper {
     container-type: size;
@@ -105,28 +105,20 @@ $bg-color: #1390a0;
 
 .task_backlogged {
     width: 100%;
-    background-color: #1390a0;
+    background-color: $bg-color;
+    
     padding: var(--gap_xsmall);
     border-radius: var(--gap_xsmall);
     box-sizing: border-box;
 
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: var(--gap_xsmall);
-    grid-template-columns: 1fr 1fr 20px;
-    grid-template-rows:
-        auto
-        minmax(20px, clamp(20px, auto, 38px))
-        auto;
-    grid-template-areas:
-        "name name right"
-        "desc desc right"
-        "duration empty right";
 
     cursor: default;
     user-select: none;
 
     .name {
-        grid-area: name;
         max-height: 22px;
         white-space: nowrap;
         overflow: hidden;
@@ -135,6 +127,7 @@ $bg-color: #1390a0;
 
     .description {
         color: color-mix(in srgb, #fff 75%, $bg-color);
+        max-height: 38px;
 
         grid-area: desc;
         font-size: var(--font_medium);
@@ -148,28 +141,28 @@ $bg-color: #1390a0;
     .duration {
         color: color-mix(in srgb, #fff 75%, $bg-color);
 
-        grid-area: duration;
         font-family: "Satoshi-Regular", sans-serif;
         font-size: var(--font_medium);
-        align-self: flex-end;
-        padding-top: var(--gap_xsmall);
+        margin-top: auto;
     }
 }
 
 // Placeholder is the element being dragged
 .task_backlogged.placeholder,
 .task.placeholder {
-    display: grid;
+    width: 100%;
+    background-color: $bg-color;
+    
+    padding: var(--gap_xsmall);
+    border-radius: var(--gap_xsmall);
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
     gap: var(--gap_xsmall);
-    grid-template-columns: 1fr 1fr 20px;
-    grid-template-rows: 22px auto 23px;
-    grid-template-areas:
-        "name name right"
-        "time time right"
-        "duration empty right";
 
     .name {
-        grid-area: name;
+        height: 22px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -178,7 +171,7 @@ $bg-color: #1390a0;
     .time {
         color: color-mix(in srgb, #fff 75%, $bg-color);
         
-        grid-area: time;
+        max-height: 22px;
         font-size: var(--font_medium);
     }
 
@@ -189,14 +182,11 @@ $bg-color: #1390a0;
     .duration {
         color: color-mix(in srgb, #fff 75%, $bg-color);
 
-        grid-area: duration;
         font-family: "Satoshi-Regular", sans-serif;
         font-size: var(--font_medium);
-        align-self: flex-end;
-        padding-top: var(--gap_xsmall);
+        margin-top: auto;
     }
 }
-
 
 .hidden {
     display: none;

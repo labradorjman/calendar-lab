@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import CalendarGrid from "@/components/ui/CalendarGrid";
 import { getYearMonthDay } from "@/utils/date";
 import { useTimer } from "@/timerContext";
+import { unixToPostgresTimestamptz } from "@/utils/time";
 
 interface YearMonthState {
     year: number;
@@ -30,7 +31,7 @@ export default function AppCalendar() {
 
     useEffect(() => {
         return onMinuteTick(unixSeconds => {
-            // Run per minute tick
+            
         });
     }, [onMinuteTick]);
 

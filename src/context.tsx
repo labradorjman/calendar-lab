@@ -3,7 +3,9 @@
 import type {  Dispatch, SetStateAction } from "react";
 import React, {
     createContext,
+    useCallback,
     useContext,
+    useRef,
     useState
 } from "react";
 import { Task } from "@/models/task";
@@ -53,6 +55,11 @@ interface CalendarContextProps {
     modalWorkSession: WorkSessionModalState | null;
     openWorkSessionModal: (initialState?: WorkSessionModalState) => void;
     closeWorkSessionModal: () => void;
+
+    scrollElementRef: React.RefObject<HTMLElement | null>;
+    getScrollTop: () => number;
+    setScrollTop: (value: number) => void;
+    getScrollElement: () => HTMLElement | null;
 }
 
 interface CalendarContextProviderProps {
@@ -113,6 +120,23 @@ export default function CalendarContextProvider({
         setModalWorkSession(null);
     }
 
+    const scrollElementRef = useRef<HTMLElement | null>(null);
+
+    const getScrollTop = useCallback(() => {
+        return scrollElementRef.current?.scrollTop ?? 0;
+    }, []);
+
+    const setScrollTop = useCallback((value: number) => {
+        if (scrollElementRef.current) {
+            scrollElementRef.current.scrollTop = value;
+        }
+    }, []);
+
+    const getScrollElement = useCallback(() => {
+        return scrollElementRef.current ?? null;
+    }, []);
+
+
     return (
         <CalendarContext.Provider value={{
             selectedDate,
@@ -127,6 +151,10 @@ export default function CalendarContextProvider({
             isWorkSessionModalOpen: modalWorkSession !== null,
             openWorkSessionModal,
             closeWorkSessionModal,
+            scrollElementRef,
+            getScrollTop,
+            setScrollTop,
+            getScrollElement,
         }}>
             {children}
         </CalendarContext.Provider>

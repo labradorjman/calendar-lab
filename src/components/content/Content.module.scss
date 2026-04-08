@@ -1,22 +1,40 @@
-.content {
-    height: 100%;
+.calendar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.headers {
+    flex-shrink: 0;
+    height: 40px;
     display: grid;
     grid-template-columns: 45px 1fr;
-    grid-template-rows: 1fr;
-    min-height: 0;
-
-    .time_column {
-        margin-top: 40px;
-        height: calc(100% - 40px);
-        min-height: 0;
-        overflow: hidden;
+    
+    &::before {
+        content: '';
     }
+
+    .day_headers {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: var(--gap_small);
+    }
+}
+
+.simplebar {
+    flex: 1;
+    min-height: 0;
+}
+
+.content {
+    display: grid;
+    grid-template-columns: 45px 1fr;
 
     .right_columns {
         display: grid;
         grid-auto-flow: column;
         grid-auto-columns: 1fr;
         gap: var(--gap_small);
-        height: 100%;
     }
 }

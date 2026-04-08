@@ -4,82 +4,57 @@ import styles from "./Content.module.scss";
 
 import { useCalendarContext } from "@/context";
 import DayColumn from "./DayColumn";
-import { useEffect, useRef } from "react";
-import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
+import { useCallback, useEffect, useRef } from "react";
 import TimeColumn from "./TimeColumn";
 import TaskModal from "@/components/tasks/TaskModal";
 import useCalendarStore from "@/store";
 import { dateToKey } from "@/utils/objectToKey";
 import WorkSessionModal from "../workSessions/WorkSessionModal";
-
-const TIME_COLUMN_NAME = "time_column";
+import SimpleBar from "simplebar-react";
+import DayHeader from "./DayHeader";
+import SimpleBarCore from "simplebar-core";
 
 export default function Content() {
     const calendarContext = useCalendarContext();
-    const scrollSyncContext = useScrollSyncContext();
 
     const [_, updateTasks] = useCalendarStore("tasks");
     const [__, updateWorkSessions] = useCalendarStore("work_sessions");
     const [___, updateTimeBlocks] = useCalendarStore("time_blocks");
 
-    const isInitialMount = useRef<boolean>(true);
-    const prevDateRange = useRef<Date[]>([]);
-
-    useEffect(() => {
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            prevDateRange.current = calendarContext.dateRange;
-            return;
+   const simpleBarRef = useCallback((node: SimpleBarCore | null) => {
+        if (node) {
+            calendarContext.scrollElementRef.current = node.getScrollElement();
+        } else {
+            calendarContext.scrollElementRef.current = null;
         }
-
-        const unregisterDays = prevDateRange.current.filter(
-        prev =>
-            !calendarContext.dateRange.some(
-                curr => dateToKey(curr) === dateToKey(prev)
-            )
-        );
-        
-        unregisterDays.forEach(date => scrollSyncContext.unregister(dateToKey(date)));
-        
-        prevDateRange.current = calendarContext.dateRange;
-    }, [calendarContext.dateRange]);
-
-    useEffect(() => {
-        scrollSyncContext.clearRelations(TIME_COLUMN_NAME);
-        calendarContext.dateRange.forEach(date => {
-            scrollSyncContext.removeRelation(dateToKey(date), TIME_COLUMN_NAME);
-
-            const relatedKeys = calendarContext.dateRange
-                .filter(val => val.getTime() !== date.getTime())
-                .map(dateToKey);
-            relatedKeys.push(TIME_COLUMN_NAME);
-            scrollSyncContext.relate(dateToKey(date), relatedKeys);
-
-            scrollSyncContext.relate(TIME_COLUMN_NAME, [dateToKey(date)]);
-        });
-
-        scrollSyncContext.syncFrom(TIME_COLUMN_NAME);
-    }, [calendarContext.dateRange]);
+    }, []);
     
     return (
         <>
-            <div className={styles.content}>
-                <div className={styles.time_column}>
-                    <TimeColumn
-                        isHidden={false}
-                        startHour={0}
-                        endHour={23}
-                    />
+            <div className={styles.calendar}>
+                <div className={styles.headers}>
+                    <div className={styles.day_headers}>
+                        {calendarContext.dateRange.map((date) => (
+                            <DayHeader key={dateToKey(date)} date={date} />
+                        ))}
+                    </div>
                 </div>
-                <div className={styles.right_columns}>
-                    {calendarContext.dateRange.map((date, index) => (
-                        <DayColumn
-                            key={dateToKey(date)}
-                            date={date}
-                            isRightmost={index === calendarContext.dateRange.length - 1}
-                        />
-                    ))}
-                </div>
+                <SimpleBar ref={simpleBarRef} className={styles.simplebar}>
+                    <div className={styles.content}>
+                        <div className={styles.time_column}>
+                            <TimeColumn isHidden={false} startHour={0} endHour={23} />
+                        </div>
+                        <div className={styles.right_columns}>
+                            {calendarContext.dateRange.map((date, index) => (
+                                <DayColumn
+                                    key={dateToKey(date)}
+                                    date={date}
+                                    isRightmost={index === calendarContext.dateRange.length - 1}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </SimpleBar>
             </div>
             <TaskModal
                 open={calendarContext.isTaskModalOpen}

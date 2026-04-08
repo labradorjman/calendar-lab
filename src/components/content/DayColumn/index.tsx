@@ -2,12 +2,10 @@
 
 import styles from "./DayColumn.module.scss";
 
-import SimpleBar from 'simplebar-react';
 import type SimpleBarCore from "simplebar-core";
-import { TIMEZONE, WEEK_DAYS } from "@/constants/calendar";
+import { TIMEZONE } from "@/constants/calendar";
 import { HEADER_HEIGHT, HOUR_HEIGHT } from "@/constants/column";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 import { TaskDragState, useTaskContext } from "@/taskContext";
 import { updateTask } from "@/services/taskService";
 import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, secondsToOffset, unixToPostgresTimestamptz } from "@/utils/time";
@@ -71,19 +69,12 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     const calendarContext = useCalendarContext();
     const taskStartSeconds = useRef<number>(0);
 
-    const headerRef = useRef<HTMLDivElement>(null);
-    const [headerHeight, setHeaderHeight] = useState<number>(0);
-
     const showSkeletonRef = useRef<boolean>(false);
     const hoveredRef = useRef<boolean>(false);
     const [contentHeight, setContentHeight] = useState<number>(0);
     const [taskContainerHeight, setTaskContainerHeight] = useState<number>(0);
 
     useEffect(() => {
-        if(headerRef.current) {
-            setHeaderHeight(headerRef.current.offsetHeight);
-        }
-
         setContentHeight(24 * HOUR_HEIGHT);
         setTaskContainerHeight(24 * HOUR_HEIGHT);
     }, []);
@@ -109,28 +100,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         return { todayTimeBlocks: today };
     }, [timeBlocks]);
 
-    const scrollSyncContext = useScrollSyncContext();
     const taskContainerRef = useRef<HTMLDivElement>(null);
-    const simpleBarRef = useRef<SimpleBarCore>(null);
-
-    useEffect(() => {
-        if (!simpleBarRef.current) return;
-
-        const element = simpleBarRef.current.getScrollElement();
-        scrollSyncContext.register(dateToKey(date), {
-            getScrollElement: () => element
-        });
-
-        const handler = () => {
-            scrollSyncContext.syncFrom(dateToKey(date));
-        };
-
-        element?.addEventListener("scroll", handler);
-
-        return () => {
-            element?.removeEventListener("scroll", handler);
-        };
-    }, []);
 
     useEffect(() => {
         if (!taskContext.subscribeTaskDrag) return;
@@ -257,23 +227,15 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         };
     }, [tasks, workSessions]);
 
-    const getScrollTop = useCallback(() => {
-        return (
-            scrollSyncContext.get("time_column")
-                ?.getScrollElement()
-                ?.scrollTop ?? 0
-        );
-    }, []);
-
     const skeletonRef = useRef<HTMLDivElement | null>(null);
 
     return (
         <div
             className={styles.column}
             onContextMenu={(e) => {
-                if(e.clientY < HEADER_HEIGHT) return;
+                if (e.clientY < HEADER_HEIGHT) return;
 
-                const { hour24, minute } = get24HourMinuteFromOffset(getScrollTop() + e.clientY - HEADER_HEIGHT);
+                const { hour24, minute } = get24HourMinuteFromOffset(calendarContext.getScrollTop() + e.clientY - HEADER_HEIGHT);
                 const hourTime = new HourTime(hour24, minute);
 
                 taskStartSeconds.current = calendarDate.startSeconds + hourTime.toSecondsSince();
@@ -292,100 +254,87 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                 });
             }}
         >
-            <div ref={headerRef} className={styles.header}>
-                <div className={styles.day_label}>
-                    <span className={styles.name}>{WEEK_DAYS[date.getDay()]}</span>
-                    <span className={styles.number}>{date.getDate()}</span>
+            <div className={styles.content} style={{ height: contentHeight }}>
+                <div
+                    ref={taskContainerRef}
+                    className={styles.task_container}
+                    data-hover-id={dateToKey(date)}
+                    data-unix-start={calendarDate.startSeconds}
+                    style={{ height: taskContainerHeight }}
+                >
+                    <TaskSkeleton ref={skeletonRef} />
+                    {todayTimeBlocks.map(timeBlock => {
+                        if (timeBlock.taskId) {
+                            if (tasks.length === 0) return;
+
+                            const task = taskById.get(timeBlock.taskId);
+                            if (task?.isBacklogged || timeBlock.startsAt === null) return null;
+
+                            const startsAtLocalUnix =
+                                postgresTimestamptzToUnix(timeBlock.startsAt) +
+                                calendarDate.tzOffsetSeconds;
+                            
+                            return (
+                                <TaskBlock
+                                    key={task!.id}
+                                    task={task!}
+                                    timeBlock={timeBlock}
+                                    calendarDate={calendarDate}
+                                    style={{
+                                        position: "absolute",
+                                        top: `${secondsToOffset(
+                                            startsAtLocalUnix -
+                                                calendarDate.startLocalSeconds
+                                        )}px`,
+                                        height:
+                                            timeBlock.duration !== 0
+                                                ? `${(HOUR_HEIGHT / 60) * (timeBlock.duration / 60)}px`
+                                                : "auto",
+                                    }}
+                                />
+                        );
+                        } else if (timeBlock.workSessionId) {
+                            if (workSessions.length === 0) return;
+
+                            const workSession = workSessions.find(ws => ws.id === timeBlock.workSessionId);
+                            if (!workSession) {
+                                console.error(`Could not find work session [${timeBlock.workSessionId}] linked to a timeblock with [${timeBlock.id}]`);
+                                return null;
+                            }
+
+                            if (timeBlock.startsAt == null) {
+                                console.error(`Work session [${workSession.id}] must have a valid timeblock. Error: The timeblock associated with the work session has not start time defined.`);
+                                return;
+                            }
+
+                            const startsAtLocalUnix =
+                                postgresTimestamptzToUnix(timeBlock.startsAt) +
+                                calendarDate.tzOffsetSeconds;
+
+                            return (
+                                <WorkSessionBlock
+                                    key={timeBlock.id}
+                                    workSession={workSession}
+                                    timeBlock={timeBlock}
+                                    sessionTasks={tasksByWorkSessionId.get(workSession.id) ?? []}
+                                    style={{
+                                        position: "absolute",
+                                        top: `${secondsToOffset(
+                                            startsAtLocalUnix -
+                                                calendarDate.startLocalSeconds
+                                        )}px`,
+                                        height:
+                                            timeBlock.duration !== 0
+                                                ? `${(HOUR_HEIGHT / 60) * (timeBlock.duration / 60)}px`
+                                                : "auto",
+                                    }}
+                                />
+                            );
+                        }                    
+                    })}
                 </div>
             </div>
-
-            <SimpleBar
-                ref={simpleBarRef}
-                style={{ maxHeight: `calc(100vh - ${headerHeight}px)` }}
-                className={`${isRightmost ? "" : styles.scroll_hidden}`}
-            >
-                <div className={styles.content} style={{ height: contentHeight }}>
-                    <div
-                        ref={taskContainerRef}
-                        className={styles.task_container}
-                        data-hover-id={dateToKey(date)}
-                        data-unix-start={calendarDate.startSeconds}
-                        style={{ height: taskContainerHeight }}
-                    >
-                        <TaskSkeleton ref={skeletonRef} />
-                        {todayTimeBlocks.map(timeBlock => {
-                            if (timeBlock.taskId) {
-                                if (tasks.length === 0) return;
-
-                                const task = taskById.get(timeBlock.taskId);
-                                if (task?.isBacklogged || timeBlock.startsAt === null) return null;
-
-                                const startsAtLocalUnix =
-                                    postgresTimestamptzToUnix(timeBlock.startsAt) +
-                                    calendarDate.tzOffsetSeconds;
-                                
-                                return (
-                                    <TaskBlock
-                                        key={task!.id}
-                                        task={task!}
-                                        timeBlock={timeBlock}
-                                        calendarDate={calendarDate}
-                                        getScrollTop={getScrollTop}
-                                        style={{
-                                            position: "absolute",
-                                            top: `${secondsToOffset(
-                                                startsAtLocalUnix -
-                                                    calendarDate.startLocalSeconds
-                                            )}px`,
-                                            height:
-                                                timeBlock.duration !== 0
-                                                    ? `${(HOUR_HEIGHT / 60) * (timeBlock.duration / 60)}px`
-                                                    : "auto",
-                                        }}
-                                    />
-                            );
-                            } else if (timeBlock.workSessionId) {
-                                if (workSessions.length === 0) return;
-
-                                const workSession = workSessions.find(ws => ws.id === timeBlock.workSessionId);
-                                if (!workSession) {
-                                    console.error(`Could not find work session [${timeBlock.workSessionId}] linked to a timeblock with [${timeBlock.id}]`);
-                                    return null;
-                                }
-
-                                if (timeBlock.startsAt == null) {
-                                    console.error(`Work session [${workSession.id}] must have a valid timeblock. Error: The timeblock associated with the work session has not start time defined.`);
-                                    return;
-                                }
-
-                                const startsAtLocalUnix =
-                                    postgresTimestamptzToUnix(timeBlock.startsAt) +
-                                    calendarDate.tzOffsetSeconds;
-
-                                return (
-                                    <WorkSessionBlock
-                                        key={timeBlock.id}
-                                        workSession={workSession}
-                                        timeBlock={timeBlock}
-                                        sessionTasks={tasksByWorkSessionId.get(workSession.id) ?? []}
-                                        style={{
-                                            position: "absolute",
-                                            top: `${secondsToOffset(
-                                                startsAtLocalUnix -
-                                                    calendarDate.startLocalSeconds
-                                            )}px`,
-                                            height:
-                                                timeBlock.duration !== 0
-                                                    ? `${(HOUR_HEIGHT / 60) * (timeBlock.duration / 60)}px`
-                                                    : "auto",
-                                        }}
-                                    />
-                                );
-                            }                    
-                        })}
-                    </div>
-                </div>
-            </SimpleBar>
+            {/* </SimpleBar> */}
         </div>
     );
 }

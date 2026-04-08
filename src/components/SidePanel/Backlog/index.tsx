@@ -12,7 +12,6 @@ import { handlePromise } from "@/utils/handleError";
 import { useContextMenu } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { useCalendarContext } from "@/context";
 import { TimeBlock } from "@/models/timeBlock";
-import { useScrollSyncContext } from "@/scrollSync/ScrollSyncContext";
 
 export default function Backlog() {
     const { openContextMenu } = useContextMenu();
@@ -29,7 +28,6 @@ export default function Backlog() {
     const [timeBlocks] = useCalendarStore("time_blocks");
 
     const calendarContext = useCalendarContext();
-    const scrollSyncContext = useScrollSyncContext();
     
     useEffect(() => {
         if (!taskContext.subscribeDragDrop) return;
@@ -93,14 +91,6 @@ export default function Backlog() {
             timeBlock: timeBlockByKey.get(toKey("task", task.id))
         }));
 
-    const getScrollTop = useCallback(() => {
-        return (
-            scrollSyncContext.get("time_column")
-                ?.getScrollElement()
-                ?.scrollTop ?? 0
-        );
-    }, []);
-
     return (
         <div className={styles.backlog}>
             <div className={styles.header}>
@@ -139,7 +129,6 @@ export default function Backlog() {
                             task={t.task}
                             timeBlock={t.timeBlock}
                             variant="backlogged"
-                            getScrollTop={getScrollTop}
                         />
                     ))}
                 </SimpleBar>

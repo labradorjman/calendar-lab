@@ -13,6 +13,7 @@ export interface Task {
     softDeadline: string | null,
     completedAt: string | null,
     createdAt: string,
+    updatedAt: string,
 }
 
 export function createDefaultTask(): Omit<Task, "id">{
@@ -30,6 +31,7 @@ export function createDefaultTask(): Omit<Task, "id">{
         softDeadline: null,
         completedAt: null,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
     };
 }
 

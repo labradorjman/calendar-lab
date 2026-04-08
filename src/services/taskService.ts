@@ -23,7 +23,10 @@ export async function updateTask(
     const res = await fetch(`/api/tasks/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(request),
+        body: JSON.stringify({
+            ...request,
+            task: request.task ? { ...request.task, updatedAt: new Date().toISOString() } : undefined,
+        }),
     });
 
     if (!res.ok) throw new Error("Failed to update task");
@@ -46,7 +49,12 @@ export async function patchTasks(
     const res = await fetch(`/api/tasks`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(request),
+        body: JSON.stringify(
+            request.map(patch => ({
+                ...patch,
+                changes: { ...patch.changes, updatedAt: new Date().toISOString() },
+            }))
+        ),
     });
 
     if (!res.ok) throw new Error("Failed to patch tasks");

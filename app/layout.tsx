@@ -12,7 +12,6 @@ import { ContextMenuRenderer } from "@/components/_layout/ContextMenu/ContextMen
 import SidePanel from "@/components/SidePanel";
 import TimerProvider from "@/timerContext";
 import WorkSessionContextProvider from "@/workSessionContext";
-import ScrollSyncContextProvider from "@/scrollSync/ScrollSyncContext";
 import TimeBlockContextProvider from "@/timeBlockContext";
 
 const geistSans = Geist({
@@ -51,14 +50,12 @@ export default function RootLayout({
                         <TaskConextProvider>
                             <WorkSessionContextProvider>
                                 <ContextMenuProvider>
-                                    <ScrollSyncContextProvider>
-                                        <TimeBlockContextProvider>
-                                            <div className={styles.layout}>
-                                                <SidePanel />
-                                                <div className={styles.main_content}>{children}</div>      
-                                            </div>
-                                        </TimeBlockContextProvider>
-                                    </ScrollSyncContextProvider>
+                                    <TimeBlockContextProvider>
+                                        <div className={styles.layout}>
+                                            <SidePanel />
+                                            <div className={styles.main_content}>{children}</div>      
+                                        </div>
+                                    </TimeBlockContextProvider>
                                     <ContextMenuRenderer/>
                                 </ContextMenuProvider>
                             </WorkSessionContextProvider>

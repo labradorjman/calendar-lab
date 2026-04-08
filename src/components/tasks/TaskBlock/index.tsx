@@ -22,13 +22,12 @@ interface TaskProps extends React.HTMLAttributes<HTMLDivElement> {
     timeBlock?: TimeBlock;
     calendarDate?: CalendarDate;
     variant?: "default" | "backlogged";
-    getScrollTop: () => number;
 }
 
 // Height of placeholder object
 const FIXED_PLACEHOLDER_HEIGHT = 85;
 
-export default function TaskBlock({ task, timeBlock, calendarDate, variant = "default", getScrollTop, style, ...props }: TaskProps) {
+export default function TaskBlock({ task, timeBlock, calendarDate, variant = "default", style, ...props }: TaskProps) {
     const calendarContext = useCalendarContext();
     const timeBlockContext = useTimeBlockContext();
 
@@ -89,7 +88,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         onDragStart: (_, pointerY) => {
             if (!taskRef.current || taskContext.draggedTaskRef.current) return;
 
-            scrollDelta = getScrollTop();
+            scrollDelta = calendarContext.getScrollTop();
 
             hoverableRectsRef.current = Array.from(
                 document.querySelectorAll<HTMLElement>("[data-hover-id]")
@@ -129,7 +128,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
 
             let match: TaskDragState | null = null;
 
-            const currentScrollDelta = getScrollTop();
+            const currentScrollDelta = calendarContext.getScrollTop();
                 
             const taskLocalTop = Math.max(HEADER_HEIGHT, pointerY - placeHolderCenter) + currentScrollDelta;
             const localPointerY = taskLocalTop + placeHolderCenter;

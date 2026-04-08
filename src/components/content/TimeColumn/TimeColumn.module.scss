@@ -23,15 +23,3 @@ $bg-color: rgb(152, 93, 44);
     color: rgb(255, 126, 126);
     background-color: $bg-color;
 }
-
-.line {
-    position: absolute;
-    color: rgb(196, 42, 42);
-    top: 0;
-
-    z-index: 99;
-    height: 2px;
-
-    background: currentColor;
-    transform-origin: left center;
-}

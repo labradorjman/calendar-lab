@@ -14,17 +14,18 @@ const SEGMENTS = [
 ];
 
 interface TimeInputProps {
-    defaultValue?: { time12: string, meridiem: Meridiem };
+    value?: { time12: string, meridiem: Meridiem };
     onTimeChange: (hourTime: HourTime | null) => void;
 }
 
 const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
-    ({ defaultValue, onTimeChange }, ref) => {
+    ({ value, onTimeChange }, ref) => {
         const [time, setTime] = useState<string>("");
         const [timeStr, setTimeStr] = useState<string>("");
         const [meridiem, setMeridiem] = useState<Meridiem>("AM");
 
         const inputRef = useRef<HTMLInputElement>(null);
+        const lastValueRef = useRef<{ time12: string, meridiem: Meridiem } | null>(null);
 
         function handleClear() {
             setTime("");
@@ -39,8 +40,12 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
         useEffect(() => {
             // Time and timeStr not synced up (user is still inputting)
             if(time !== timeStr) return;
+
+            // Only fire onTimeChange if the change came from local interaction
+            if (lastValueRef.current?.time12 !== time || lastValueRef.current?.meridiem !== meridiem) return;
             
             if(!time) {
+                console.log("Return null");
                 onTimeChange(null);
                 return;
             }
@@ -49,17 +54,18 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
         }, [time, meridiem]);
 
         useEffect(() => {
-            if (!defaultValue || timeStr) return;
+            if (!value) return;
             
-            setTimeStr(defaultValue.time12);
-            setTime(defaultValue.time12);
-            setMeridiem(defaultValue.meridiem);
-        }, [defaultValue]);
+            setTimeStr(value.time12);
+            setTime(value.time12);
+            setMeridiem(value.meridiem);
+        }, [value]);
 
         function handleValidTimeChange(validTimeStr: string) {
             const [hourStr, minuteStr] = validTimeStr.split(":");
             const hour = parseInt(hourStr, 10);
             const minute = parseInt(minuteStr, 10);
+
             onTimeChange(HourTime.from12Hour(hour, minute, meridiem));
         }
 
@@ -99,6 +105,7 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
 
             const finalTime = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 
+            lastValueRef.current = { time12: finalTime, meridiem };
             setTimeStr(finalTime);
             setTime(finalTime.length === 5 ? finalTime : "");
         }
@@ -195,15 +202,18 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
                     }}
                     onChange={(value) => {
                         const normalized = normalizeTimeInput(value);
-                    setTimeStr(normalized);
+                        lastValueRef.current = { time12: normalized, meridiem };
+                        setTimeStr(normalized);
                     }}
                 />
                 <div className={styles.meridiem_area}>
                     <span
                         className={styles.select}
-                        onClick={() => setMeridiem((prev) => 
-                            prev === "AM" ? "PM" : "AM"
-                        )}
+                        onClick={() => setMeridiem((prev) => {
+                            const next = prev === "AM" ? "PM" : "AM";
+                            lastValueRef.current = { time12: time, meridiem: next };
+                            return next;
+                        })}
                     >
                         {meridiem}
                     </span>

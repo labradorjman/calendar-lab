@@ -6,9 +6,7 @@ import { createDefaultWorkSession, isTaskEqual, WorkSession } from "@/models/wor
 import Input from "@/components/ui/Input";
 import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
-import { createWorkSession, deleteWorkSession, updateWorkSession } from "@/services/workSessionService";
-import { createTimeBlock } from "@/services/timeBlockService";
-import { removeWorkSessionFromStore } from "@/store/workSessions";
+import { createWorkSession, updateWorkSession } from "@/services/workSessionService";
 import { useCalendarContext } from "@/context";
 import { ParsedDateParts } from "@/types/dateFormat";
 import { ClearableHandle } from "@/types/componentHandles";
@@ -262,7 +260,7 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: o
                         <div className={styles.date_row}>
                             <DateSelector
                                 ref={dateRef}
-                                defaultValue={parsedDateParts?.formattedDate}
+                                value={parsedDateParts?.formattedDate}
                                 onDateChange={(date: Date | null) => {
                                     dateValueRef.current = date;
                                     handleDateTimeChange("date");
@@ -270,14 +268,7 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: o
                             />
                             <TimeInput
                                 ref={timeRef}
-                                defaultValue={
-                                parsedDateParts
-                                    ? {
-                                        time12: parsedDateParts.time12,
-                                        meridiem: parsedDateParts.meridiem,
-                                    }
-                                    : undefined
-                                }
+                                value={parsedDateParts ? { time12: parsedDateParts.time12, meridiem: parsedDateParts.meridiem } : undefined}
                                 onTimeChange={(hourTime: HourTime | null) => {
                                     hourTimeRef.current = hourTime;
                                     handleDateTimeChange("time");

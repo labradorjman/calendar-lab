@@ -16,12 +16,12 @@ import { parseDateFromInput } from "@/utils/dateParser";
 import Icon from "@/components/ui/Icon";
 
 interface DateSelectorProps {
-    defaultValue?: string;
+    value?: string;
     onDateChange: (date: Date | null) => void;
 }
 
 const DateSelector = forwardRef<ClearableHandle, DateSelectorProps>(
-    ({ defaultValue, onDateChange }, ref) => {
+    ({ value, onDateChange }, ref) => {  
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -64,13 +64,13 @@ const DateSelector = forwardRef<ClearableHandle, DateSelectorProps>(
         }, [date]);
 
         useEffect(() => {
-            if (!defaultValue) return;
+            if (!value) return;
 
-            setDateStr(defaultValue);
+            setDateStr(value);
 
-            const parsed = parseDateFromInput(defaultValue, DATE_FORMAT);
+            const parsed = parseDateFromInput(value, DATE_FORMAT);
             setDate(parsed);
-        }, [defaultValue]);
+        }, [value]);
 
         useEffect(() => {
             function handleClickOutside(e: MouseEvent) {

@@ -13,7 +13,7 @@ interface IconProps extends React.HTMLAttributes<HTMLElement> {
 
 const iconMap: Record<TIcon, string> = {
     back_arrow: "/assets/icons/back_arrow.svg",
-    calendar: "/assets/icons/calendar.svg",
+    calendar: "/assets/icons/calendar.webp",
     drag: "/assets/icons/drag.svg",
     edit: "/assets/icons/edit.svg",
     edit_pencil: "/assets/icons/edit_pencil.svg",

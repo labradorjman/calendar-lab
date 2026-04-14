@@ -12,10 +12,11 @@ export class HourTime {
 
         if (suffix) {
 
-        // 12hr
-        if (hour < 1 || hour > 12) {
-            throw new Error("Hour must be 1–12 for 12-hour format");
-        }
+            // 12hr
+            if (hour < 1 || hour > 12) {
+                throw new Error("Hour must be 1–12 for 12-hour format");
+            }
+            
             this.hour24 = suffix === "AM" ? (hour % 12) : ((hour % 12) + 12);
             this.suffix = suffix;
         } else {

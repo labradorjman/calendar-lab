@@ -48,6 +48,9 @@ type WorkSessionContextProps = {
     isSelected: boolean;
     select: (initial: WorkSessionState) => void;
     deselect: () => void;
+    isEdit: boolean;
+    startEdit: () => void;
+    stopEdit: () => void;
 }
 
 const WorkSessionContext = createContext<WorkSessionContextProps | undefined>(undefined);
@@ -65,6 +68,7 @@ const EMPTY: WorkSessionState = {
 
 export default function WorkSessionContextProvider({ children }: { children: React.ReactNode }) {
     const [selected, setSelected] = useState<WorkSessionState | null>(null);
+    const [isEdit, setIsEdit] = useState(false);
     const [stack, setStack] = useState<WorkSessionState[]>([EMPTY]);
     const [cursor, setCursor] = useState(0);
     const [savedSnapshot, setSavedSnapshot] = useState<WorkSessionState>(EMPTY);
@@ -110,7 +114,16 @@ export default function WorkSessionContextProvider({ children }: { children: Rea
     const markSaved = useCallback(() => {
         const snapshot = stack[cursor];
         setSavedSnapshot(snapshot);
+        setIsEdit(false);
     }, [stack, cursor]);
+
+    const startEdit = useCallback(() => setIsEdit(true), []);
+
+    const stopEdit = useCallback(() => {
+        setIsEdit(false);
+        setStack([savedSnapshot]);
+        setCursor(0);
+    }, [savedSnapshot]);
 
     return (
         <WorkSessionContext.Provider value={{
@@ -129,6 +142,9 @@ export default function WorkSessionContextProvider({ children }: { children: Rea
             isSelected: selected !== null,
             select,
             deselect,
+            isEdit,
+            startEdit,
+            stopEdit,
         }}>
             {children}
         </WorkSessionContext.Provider>

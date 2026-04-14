@@ -2,7 +2,7 @@
 
 import { WorkSession } from "@/models/workSession";
 import { TimeBlock } from "@/models/timeBlock";
-import styles from "./WorkSession.module.scss";
+import styles from "./WorkSessionBlock.module.scss";
 import { Task } from "@/models/task";
 import { useWorkSessionContext } from "@/workSessionContext";
 import { useEffect, useRef, useState } from "react";
@@ -11,14 +11,18 @@ import { TaskDragState, useTaskContext } from "@/taskContext";
 import { handlePromise } from "@/utils/handleError";
 import { updateTask } from "@/services/taskService";
 import useCalendarStore from "@/store";
+import { postgresTimestamptzToUnix } from "@/utils/time";
+import { CalendarDate } from "@/utils/Time/CalendarDate";
+import { HourTime } from "@/utils/Time/HourTime";
 
 interface WorkSessionProps extends React.HTMLAttributes<HTMLDivElement> {
     workSession: WorkSession;
     timeBlock: TimeBlock;
     sessionTasks: Task[];
+    calendarDate: CalendarDate;
 }
 
-export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks, style, ...props }: WorkSessionProps) {
+export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks, calendarDate, style, ...props }: WorkSessionProps) {
     const { select, workSession: selectedSession } = useWorkSessionContext();
     const taskContext = useTaskContext();
 
@@ -106,6 +110,12 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
         }
     };
 
+    const startSeconds = postgresTimestamptzToUnix(timeBlock.startsAt!) - calendarDate.startSeconds;
+    const hour24 = Math.floor(startSeconds / 3600);
+    const minutes = Math.floor((startSeconds % 3600) / 60);
+    const hourTime = new HourTime(hour24, minutes);
+    const endHourTime = hourTime.addMinutes(timeBlock.duration / 60);
+    
     return (
         <div
             ref={blockRef}
@@ -123,12 +133,18 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
                 });
             }}
         >
-            <span>{workSession.name}</span>
+            <div className="flex flex-row gap-1 items-center">
+                <span className={styles.session_name}>{workSession.name}</span>
+                <span className={styles.session_time}>{hourTime.Time12} - {endHourTime.Time12WithSuffix}</span>
+            </div>
             <div className={styles.task_container}>
                 {sortedTasks.map(task => {
                     return (
                         <div key={task.id} className={styles.task}>
                             <span>{`• ${task.name}`}</span>
+                            {task.isCompleted && (
+                                <div className={styles.completed}/>
+                            )}
                         </div>
                     )
                 })}

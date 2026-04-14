@@ -15,7 +15,7 @@ import Backlog from "./Backlog";
 
 
 export default function SidePanel() {
-    const { deselect, isSelected } = useWorkSessionContext();
+    const { isSelected, deselect, isEdit, stopEdit } = useWorkSessionContext();
 
     const [_, updateTasks] = useCalendarStore("tasks");
     const [__, updateWorkSessions] = useCalendarStore("work_sessions");
@@ -54,20 +54,37 @@ export default function SidePanel() {
             <div className={styles.divider} />
             {isSelected ? (
                 <div className={styles.selection}>
-                    <Button
-                        element="button"
-                        variant="transparent"
-                        size="min"
-                        onClick={deselect}
-                        className="flex items-center"
-                    >
-                        <Icon
-                            className="mr-2"
-                            icon="back_arrow"
-                            size="sm"
-                        />
-                        <span className="h-5 flex items-center">Back</span>
-                    </Button>
+                    {!isEdit ? (
+                        <Button
+                            element="button"
+                            variant="transparent"
+                            size="min"
+                            onClick={deselect}
+                            className="flex items-center"
+                        >
+                            <Icon
+                                className="mr-2"
+                                icon="back_arrow"
+                                size="sm"
+                            />
+                            <span className="h-5 flex items-center">Back</span>
+                        </Button>
+                    ) : (
+                        <Button
+                            element="button"
+                            variant="transparent"
+                            size="min"
+                            onClick={stopEdit}
+                            className="flex items-center"
+                        >
+                            <Icon
+                                className="mr-2"
+                                icon="x"
+                                size="sm"
+                            />
+                            <span className="h-5 flex items-center">Discard changes</span>
+                        </Button>
+                    )}
                     <SelectedSession />
                 </div>
             ) : (

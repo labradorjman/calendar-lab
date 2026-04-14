@@ -2,7 +2,7 @@
 
 import styles from "./SelectedSession.module.scss";
 import SessionTask from "@/components/workSessions/SessionTask";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { patchTasks, TaskPatch } from "@/services/taskService";
 import { handlePromise } from "@/utils/handleError";
 import useCalendarStore from "@/store";
@@ -15,28 +15,30 @@ import { Task } from "@/models/task";
 import { updateWorkSession } from "@/services/workSessionService";
 
 export default function SelectedSession() {
-    const { deselect, push, revert, undo, markSaved, isDirty, savedSnapshot, workSession, tasks } = useWorkSessionContext();
+    const {
+        deselect, push, revert, undo, markSaved,
+        isDirty, savedSnapshot, workSession, tasks: contextTasks,
+        isEdit, startEdit, stopEdit,
+    } = useWorkSessionContext();
 
-    const [isEdit, setIsEdit] = useState(false);
-    const [_, updateTasks] = useCalendarStore("tasks");
+    const [storeTasks, updateTasks] = useCalendarStore("tasks");
     const [__, updateWorkSessions] = useCalendarStore("work_sessions");
-
-    const [sortedTasks, setSortedTasks] = useState(() =>
-        tasks.toSorted((a, b) => a.orderIndex - b.orderIndex)
-    );
+    
+    const sessionTasks = useMemo(() => {
+        const source = isEdit ? contextTasks : storeTasks;
+        return source
+            .filter(t => t.workSessionId === workSession?.id)
+            .toSorted((a, b) => a.orderIndex - b.orderIndex);
+    }, [isEdit, contextTasks, storeTasks, workSession?.id]);
 
     useEffect(() => {
-        setSortedTasks(tasks.toSorted((a, b) => a.orderIndex - b.orderIndex));
-    }, [workSession?.id, tasks]);
-
-    useEffect(() => {
-        setIsEdit(false);
+        stopEdit()
     }, [workSession?.id]);
 
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
             if (e.key === "Escape") {
-                setIsEdit(false);
+                stopEdit();
                 revert();
             }
             if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
@@ -73,7 +75,7 @@ export default function SelectedSession() {
     const handleReorder = async (dragStartIndex: number, dragEndIndex: number) => {
         if (dragStartIndex === dragEndIndex) return;
 
-        const reordered = sortedTasks.map(task => {
+        const reordered = sessionTasks.map(task => {
             if (task.orderIndex === dragStartIndex) {
                 return { ...task, orderIndex: dragEndIndex };
             }
@@ -87,11 +89,10 @@ export default function SelectedSession() {
         }).toSorted((a, b) => a.orderIndex - b.orderIndex);
 
         push({ type: "TASK_REORDER", tasks: reordered });
-        setSortedTasks(reordered);
 
         const orderChanges = reordered
             .filter(task => {
-                const original = sortedTasks.find(p => p.id === task.id);
+                const original = sessionTasks.find(p => p.id === task.id);
                 return task.orderIndex !== original?.orderIndex;
             })
             .map(t => ({ id: t.id, changes: { orderIndex: t.orderIndex } }));
@@ -110,12 +111,11 @@ export default function SelectedSession() {
     };
 
     async function saveChanges() {
-        setIsEdit(false);
         markSaved();
 
         const nameChanged = workSession?.name !== savedSnapshot.workSession?.name;
 
-        const reorderedTasks = tasks
+        const reorderedTasks = sessionTasks
             .filter(t => {
                 const original = savedSnapshot.tasks.find(o => o.id === t.id);
                 return t.orderIndex !== original?.orderIndex;
@@ -123,10 +123,10 @@ export default function SelectedSession() {
             .map(t => ({ id: t.id, changes: { orderIndex: t.orderIndex } }));
 
         const deletedTasks = savedSnapshot.tasks
-            .filter(t => !tasks.find(current => current.id === t.id))
+            .filter(t => !sessionTasks.find(current => current.id === t.id))
             .map(t => ({ id: t.id, changes: { orderIndex: 0, workSessionId: null, isBacklogged: true } }));
 
-        const renamedTasks = tasks
+        const renamedTasks = sessionTasks
             .filter(t => {
                 const original = savedSnapshot.tasks.find(o => o.id === t.id);
                 return t.name !== original?.name;
@@ -201,7 +201,7 @@ export default function SelectedSession() {
                         element="button"
                         variant="outline"
                         size="min"
-                        onClick={() => setIsEdit(true)}
+                        onClick={() => startEdit()}
                     >
                         <Icon icon="edit_pencil" size="sm" />
                     </Button>
@@ -219,7 +219,7 @@ export default function SelectedSession() {
                 )}
             </div>
             <div className="flex flex-col gap-2">
-                {sortedTasks.map(task => {
+                {sessionTasks.map(task => {
                     return (
                         <SessionTask
                             key={task.id}

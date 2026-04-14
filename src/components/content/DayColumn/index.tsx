@@ -317,6 +317,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
                                     workSession={workSession}
                                     timeBlock={timeBlock}
                                     sessionTasks={tasksByWorkSessionId.get(workSession.id) ?? []}
+                                    calendarDate={calendarDate}
                                     style={{
                                         position: "absolute",
                                         top: `${secondsToOffset(

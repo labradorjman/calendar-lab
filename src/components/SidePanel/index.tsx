@@ -17,9 +17,9 @@ import Backlog from "./Backlog";
 export default function SidePanel() {
     const { isSelected, deselect, isEdit, stopEdit } = useWorkSessionContext();
 
-    const [_, updateTasks] = useCalendarStore("tasks");
-    const [__, updateWorkSessions] = useCalendarStore("work_sessions");
-    const [___, updateTimeBlocks] = useCalendarStore("time_blocks");
+    const [, updateTasks] = useCalendarStore("tasks");
+    const [, updateWorkSessions] = useCalendarStore("work_sessions");
+    const [, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     useEffect(() => {
         async function fetchTasks() {

@@ -22,7 +22,7 @@ export default function SelectedSession() {
     } = useWorkSessionContext();
 
     const [storeTasks, updateTasks] = useCalendarStore("tasks");
-    const [__, updateWorkSessions] = useCalendarStore("work_sessions");
+    const [, updateWorkSessions] = useCalendarStore("work_sessions");
     
     const sessionTasks = useMemo(() => {
         const source = isEdit ? contextTasks : storeTasks;

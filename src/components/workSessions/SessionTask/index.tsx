@@ -25,7 +25,7 @@ export default function SessionTask({ task, onDragDrop, isEdit }: SessionTaskPro
 
     const { push } = useWorkSessionContext();
 
-    const [_, updateTasks] = useCalendarStore("tasks");
+    const [, updateTasks] = useCalendarStore("tasks");
 
     const isDragHandle = useRef(false);
     const taskRef = useRef<HTMLDivElement>(null);

@@ -17,9 +17,9 @@ import SimpleBarCore from "simplebar-core";
 export default function Content() {
     const calendarContext = useCalendarContext();
 
-    const [_, updateTasks] = useCalendarStore("tasks");
-    const [__, updateWorkSessions] = useCalendarStore("work_sessions");
-    const [___, updateTimeBlocks] = useCalendarStore("time_blocks");
+    const [, updateTasks] = useCalendarStore("tasks");
+    const [, updateWorkSessions] = useCalendarStore("work_sessions");
+    const [, updateTimeBlocks] = useCalendarStore("time_blocks");
 
    const simpleBarRef = useCallback((node: SimpleBarCore | null) => {
         if (node) {

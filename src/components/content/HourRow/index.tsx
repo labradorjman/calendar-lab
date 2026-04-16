@@ -1,5 +1,6 @@
 "use client";
 
+import { HOUR_HEIGHT } from "@/constants/column";
 import styles from "./HourRow.module.scss";
 import { HourTime } from "@/utils/Time/HourTime";
 
@@ -11,7 +12,7 @@ export default function HourRow({ hour }: HourRowProps) {
     const hourTime = new HourTime(hour);
 
     return (
-        <div className={styles.hour_row}>
+        <div className={styles.hour_row} style={{ height: `${HOUR_HEIGHT}px`}}>
             <div className={styles.row} />
             <div className={styles.text}>
                 <span>{hourTime.Hour12WithSuffix}</span>

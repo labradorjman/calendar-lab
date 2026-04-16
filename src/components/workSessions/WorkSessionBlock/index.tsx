@@ -22,12 +22,18 @@ interface WorkSessionProps extends React.HTMLAttributes<HTMLDivElement> {
     calendarDate: CalendarDate;
 }
 
+const TASK_GAP = 4;
+const TASK_HEIGHT = 24;
+
 export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks, calendarDate, style, ...props }: WorkSessionProps) {
     const { select, workSession: selectedSession } = useWorkSessionContext();
     const taskContext = useTaskContext();
 
-    const [_, updateTasks] = useCalendarStore("tasks");
-    const [__, updateTimeBlocks] = useCalendarStore("time_blocks");
+    const taskContainerRef = useRef<HTMLDivElement>(null);
+    const [maxTasks, setMaxTasks] = useState(0);
+
+    const [, updateTasks] = useCalendarStore("tasks");
+    const [, updateTimeBlocks] = useCalendarStore("time_blocks");
 
     const [sortedTasks, setSortedTasks] = useState(() =>
         sessionTasks.toSorted((a, b) => a.orderIndex - b.orderIndex)
@@ -63,6 +69,20 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
 
         return taskContext.subscribeDragDrop(handleTaskDrop);
     }, [taskContext]);
+
+    useEffect(() => {
+        const containerHeight = taskContainerRef.current?.offsetHeight ?? 0;
+
+        const requiredHeight = (sessionTasks.length * TASK_HEIGHT) + ((sessionTasks.length - 1) * TASK_GAP);
+        if (requiredHeight <= containerHeight) {
+            setMaxTasks(sessionTasks.length);
+            return;
+        }
+        
+        const available = containerHeight;
+        const count = Math.floor((available + TASK_GAP) / (TASK_HEIGHT + TASK_GAP));
+        setMaxTasks(Math.max(0, count));
+    }, [timeBlock, sessionTasks]);
 
     const handleTaskDrop = async (state: TaskDragState) => {
         if (state.hoverId !== workSessionToKey(workSession)) return;
@@ -111,10 +131,20 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
     };
 
     const startSeconds = postgresTimestamptzToUnix(timeBlock.startsAt!) - calendarDate.startSeconds;
-    const hour24 = Math.floor(startSeconds / 3600);
-    const minutes = Math.floor((startSeconds % 3600) / 60);
-    const hourTime = new HourTime(hour24, minutes);
-    const endHourTime = hourTime.addMinutes(timeBlock.duration / 60);
+    const hourTime = new HourTime(Math.floor(startSeconds / 3600), Math.floor((startSeconds % 3600) / 60));
+    const endHourTime = hourTime.addMinutes(Math.round(timeBlock.duration / 60));
+
+    const hiddenCount = sessionTasks.length - maxTasks;
+    const completedCount = sessionTasks.filter(t => t.isCompleted)?.length;
+
+    const isTruncated = hiddenCount > 0;
+
+    const visibleTasks = isTruncated
+        ? [
+            ...sortedTasks.filter(t => !t.isCompleted),
+            ...sortedTasks.filter(t => t.isCompleted),
+        ].slice(0, maxTasks)
+        : sortedTasks;
     
     return (
         <div
@@ -133,20 +163,41 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
                 });
             }}
         >
-            <div className="flex flex-row gap-1 items-center">
+            <div className="flex flex-col gap-1">
                 <span className={styles.session_name}>{workSession.name}</span>
-                <span className={styles.session_time}>{hourTime.Time12} - {endHourTime.Time12WithSuffix}</span>
+                <div className="flex flex-row items-center justify-between">
+                    <span className={styles.session_time}>{hourTime.Time12} - {endHourTime.Time12WithSuffix}</span>
+                    {hiddenCount > 0 && (
+                        <div className="flex flex-row gap-1 items-center">
+                            {Array.from({ length: sessionTasks.length }, (_, index) => (
+                                <div
+                                    key={index}
+                                    className={
+                                        index < completedCount
+                                        ? "w-1.5 h-1.5 rounded-full bg-white/80"
+                                        : "w-1.5 h-1.5 rounded-md border border-white/40"
+                                    }
+                                />
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
-            <div className={styles.task_container}>
-                {sortedTasks.map(task => {
+            <div
+                ref={taskContainerRef}
+                className={styles.task_container}
+            >
+                {visibleTasks.map((task, index) => {
+                    if (index >= maxTasks) return null;
+
                     return (
                         <div key={task.id} className={styles.task}>
                             <span>{`• ${task.name}`}</span>
                             {task.isCompleted && (
-                                <div className={styles.completed}/>
+                                <div className={styles.completed} />
                             )}
                         </div>
-                    )
+                    );
                 })}
             </div>
         </div>

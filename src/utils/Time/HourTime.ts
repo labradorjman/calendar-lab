@@ -73,7 +73,7 @@ export class HourTime {
     }
 
     addMinutes(minutes: number): HourTime {
-        const totalMinutes = this.hour24 * 60 + this.minute + minutes;
+        const totalMinutes = this.hour24 * 60 + this.minute + Math.round(minutes);
         const normalized = ((totalMinutes % 1440) + 1440) % 1440;
 
         const hour = Math.floor(normalized / 60);

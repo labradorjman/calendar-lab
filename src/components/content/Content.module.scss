@@ -1,40 +1,51 @@
 .calendar {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100vh;
-}
 
-.headers {
-    flex-shrink: 0;
-    height: 40px;
-    display: grid;
-    grid-template-columns: 45px 1fr;
-    
-    &::before {
-        content: '';
+    .headers {
+        position: sticky;
+        top: 0;
+
+        z-index: 20;
+
+        display: grid;
+        grid-template-columns: 45px 1fr;
+
+        height: 40px;
+
+        margin-bottom: -38px;
+
+        .empty {
+            width: 45px;
+        }
+
+        .day_headers {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 1fr;
+            gap: var(--gap_small);
+        }
     }
 
-    .day_headers {
-        display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: 1fr;
-        gap: var(--gap_small);
+    .simplebar {
+        flex: 1;
+        min-height: 0;
     }
-}
 
-.simplebar {
-    flex: 1;
-    min-height: 0;
-}
-
-.content {
-    display: grid;
-    grid-template-columns: 45px 1fr;
-
-    .right_columns {
+    .content {
         display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: 1fr;
-        gap: var(--gap_small);
+        grid-template-columns: 45px 1fr;
+        position: relative;
+
+        .right_columns {
+            display: grid;
+            grid-auto-flow: column;
+            grid-auto-columns: 1fr;
+            gap: var(--gap_small);
+
+            padding-top: 8px;
+        }
     }
 }

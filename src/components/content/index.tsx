@@ -33,17 +33,20 @@ export default function Content() {
         <>
             <div className={styles.calendar}>
                 <div className={styles.headers}>
+                    <div className={styles.empty} />
+                    
                     <div className={styles.day_headers}>
                         {calendarContext.dateRange.map((date) => (
                             <DayHeader key={dateToKey(date)} date={date} />
                         ))}
                     </div>
                 </div>
+
                 <SimpleBar ref={simpleBarRef} className={styles.simplebar}>
+                    <div className="bg-[#202020] h-[30px]"></div>
                     <div className={styles.content}>
-                        <div className={styles.time_column}>
-                            <TimeColumn isHidden={false} startHour={0} endHour={23} />
-                        </div>
+                        <TimeColumn startHour={0} endHour={23} />
+
                         <div className={styles.right_columns}>
                             {calendarContext.dateRange.map((date, index) => (
                                 <DayColumn

@@ -1,19 +1,26 @@
 .hour_row {
-    font-size: var(--font_small);
-        
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    
-    .row {
-        position: relative;
-        height: 2px;
-    }
+    position: relative;
+    width: 100%;
+}
 
-    .text {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        // padding-top: 4px;
-    }
+.hour_content {
+    position: absolute;
+
+    top: 0;
+    right: 0;
+
+    // transform: translateY(-50%);
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    gap: var(--gap_xsmall);
+
+    font-size: var(--font_small);
+}
+
+.text {
+    font-size: var(--font_medium);
+    white-space: nowrap;
 }

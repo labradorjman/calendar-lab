@@ -7,21 +7,13 @@ import { useRef } from "react";
 import SimpleBar from "simplebar-react";
 
 interface TimeColumnProps {
-    isHidden: boolean;
     startHour: number;
     endHour: number;
 }
 
-interface Alignment {
-    left: number;
-    top: number;
-    width: number;
-}
-
-export default function TimeColumn({ isHidden, startHour, endHour }: TimeColumnProps) {
+export default function TimeColumn({ startHour, endHour }: TimeColumnProps) {
     const timeColumnClass = [
         styles.column,
-        isHidden ? styles.time_hidden : undefined,
     ].filter(Boolean).join(" ");
 
     const isPrevDayStart = startHour < 0;

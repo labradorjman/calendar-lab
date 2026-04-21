@@ -19,9 +19,9 @@ interface YearMonthState {
 
 export default function AppCalendar() {
     const calendarContext = useCalendarContext();
-    const { onMinuteTick } = useTimer();
+    const { now, onMinuteTick } = useTimer();
 
-    const today = new Date();
+    const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     
     const [yearMonth, setYearMonth] = useState<YearMonthState>({
@@ -38,6 +38,7 @@ export default function AppCalendar() {
     function handleDateSelect(date: Date) {
         if(date === calendarContext.selectedDate) return;
 
+        console.log("handle date select app calendar");
         const { year, month } = getYearMonthDay(date);
         setYearMonth(prev => {
             if (prev.year === year && prev.month === month) {
@@ -84,6 +85,7 @@ export default function AppCalendar() {
             </div>
             <CalendarGrid
                 className={styles.calendar}
+                selectedDate={calendarContext.selectedDate}
                 yearMonth={yearMonth}
                 size="lg"
                 onDateSelect={handleDateSelect}

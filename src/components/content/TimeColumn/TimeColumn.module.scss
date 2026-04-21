@@ -1,15 +1,34 @@
-.column {
-    display: flex;
-    flex-direction: column;
+.time_area{
+    position: relative;
+    z-index: 50;
 
-    :global(.simplebar-scrollbar::before) {
-        opacity: 0 !important;
+    .current_time {
+        position: absolute;
+        top: 20px;
+        left: 0;
+        z-index: 50;
+        pointer-events: none;
+
+        width: 100%;
+        text-align: center;
+        overflow: visible;
+
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--gap_xsmall);
+
+        color: red;
+        font-size: var(--font_small);
+
+        &::after {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            min-width: 6px;
+            border-radius: 50%;
+            background: red;
+        }
     }
-}
-
-.time {
-    position: absolute;
-    z-index: 99;
-    text-align: center;
-    font-size: var(--font_medium);
 }

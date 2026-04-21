@@ -9,6 +9,7 @@ import { YearMonthState } from "@/types/yearMonthState";
 import { dateToKey } from "@/utils/objectToKey";
 import { buildMonthDates } from "@/utils/weekBuilder";
 import { getNextDates } from "@/utils/days";
+import { useTimer } from "@/timerContext";
 
 interface CalendarGridProps {
     className?: string;
@@ -21,8 +22,9 @@ interface CalendarGridProps {
 const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
     ({ className, selectedDate, yearMonth, size, onDateSelect }, ref) => {
         const calendarContext = useCalendarContext();
+        const { now } = useTimer();
 
-        const today = new Date();
+        const today = new Date(now);
         today.setHours(0, 0, 0, 0);
 
         const useLocalState = selectedDate !== undefined;
@@ -35,10 +37,8 @@ const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
         }, [yearMonth.year, yearMonth.month]);
 
         const handleDateSelect = (date: Date) => {
-            if (!useLocalState) {
-                calendarContext.setSelectedDate(date);
-                calendarContext.setDateRange(getNextDates(date, 5));
-            }
+            calendarContext.setSelectedDate(date);
+            calendarContext.setDateRange(getNextDates(date, 5));
             onDateSelect(date);
         }
 
@@ -63,7 +63,7 @@ const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
                         const isCurrentMonth =
                             cellDate.getMonth() === yearMonth.month - 1 &&
                             cellDate.getFullYear() === yearMonth.year;
-
+                        
                         const isSelected = useLocalState
                             ? selectedDate !== null
                                 ? dateToKey(selectedDate!) === dateToKey(cellDate)
@@ -76,7 +76,7 @@ const CalendarGrid = forwardRef<HTMLDivElement, CalendarGridProps>(
                                 day={cellDate.getDate()}
                                 date={cellDate}
                                 isSelected={isSelected}
-                                isToday={today.getTime() === cellDate.getTime()}
+                                isToday={dateToKey(today) === dateToKey(cellDate)}
                                 isCurrentMonth={isCurrentMonth}
                                 onDateSelect={handleDateSelect}
                             />

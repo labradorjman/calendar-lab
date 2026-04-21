@@ -4,8 +4,6 @@ import "@/styles/globals.scss";
 import 'simplebar-react/dist/simplebar.min.css';
 import styles from "./layout.module.scss";
 
-import CalendarContextProvider from "@/context";
-import { getNextDates } from "@/utils/days";
 import TaskConextProvider from "@/taskContext";
 import { ContextMenuProvider } from "@/components/_layout/ContextMenu/ContextMenuContext";
 import { ContextMenuRenderer } from "@/components/_layout/ContextMenu/ContextMenuRenderer";
@@ -13,6 +11,7 @@ import SidePanel from "@/components/SidePanel";
 import TimerProvider from "@/timerContext";
 import WorkSessionContextProvider from "@/workSessionContext";
 import TimeBlockContextProvider from "@/timeBlockContext";
+import CalendarProvider from "@/components/_layout/CalenderProvider";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -34,19 +33,13 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     return (
         <html lang="en">
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
-                <CalendarContextProvider
-                    initialSelectedDate={today}
-                    initialDateRange={getNextDates(today, 5)}
-                >
-                    <TimerProvider>
+                <TimerProvider>
+                    <CalendarProvider>
                         <TaskConextProvider>
                             <WorkSessionContextProvider>
                                 <ContextMenuProvider>
@@ -60,8 +53,8 @@ export default function RootLayout({
                                 </ContextMenuProvider>
                             </WorkSessionContextProvider>
                         </TaskConextProvider>
-                    </TimerProvider>
-                </CalendarContextProvider>
+                    </CalendarProvider>
+                </TimerProvider>
             </body>
         </html>
     );

@@ -17,7 +17,7 @@
 
         margin-bottom: -38px;
 
-        .empty {
+        .space {
             width: 45px;
         }
 
@@ -28,7 +28,7 @@
             gap: var(--gap_small);
         }
     }
-
+    
     .simplebar {
         flex: 1;
         min-height: 0;
@@ -39,11 +39,17 @@
         grid-template-columns: 45px 1fr;
         position: relative;
 
+        > :first-child {
+            overflow: visible;
+        }
+
         .right_columns {
             display: grid;
             grid-auto-flow: column;
             grid-auto-columns: 1fr;
             gap: var(--gap_small);
+
+            z-index: 1;
 
             padding-top: 8px;
         }

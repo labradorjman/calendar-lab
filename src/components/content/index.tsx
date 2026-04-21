@@ -33,7 +33,7 @@ export default function Content() {
         <>
             <div className={styles.calendar}>
                 <div className={styles.headers}>
-                    <div className={styles.empty} />
+                    <div className={styles.space} />
                     
                     <div className={styles.day_headers}>
                         {calendarContext.dateRange.map((date) => (

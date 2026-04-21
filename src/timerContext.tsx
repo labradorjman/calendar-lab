@@ -4,7 +4,9 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 
 type TimerContextProps = {
     now: Date;
-    onMinuteTick: (callback: (unixSeconds: number) => void) => () => void;
+    hour24: number;
+    minute: number;
+    onMinuteTick: (callback: (unixSeconds: number, hour24: number, minute: number) => void) => () => void;
 };
 const TimerContext = createContext<TimerContextProps | null>(null);
 
@@ -16,19 +18,20 @@ export function useTimer() {
 }
 
 const IS_DEV = process.env.NODE_ENV === "development";
-const FIXED_START = new Date(2025, 3, 7, 2, 0, 0);
+const FIXED_START = new Date(2026, 3, 22, 2, 45, 0);
 const DEV_TIME_SCALE = 10; // 1 = real time, 10 = 10x speed
 
 export default function TimerProvider({ children }: { children: React.ReactNode }) {
     const [now, setNow] = useState(() => IS_DEV ? FIXED_START : new Date());
-    const listeners = useRef<Set<(unixSeconds: number) => void>>(new Set());
+    const [hour24, setHour24] = useState(() => (IS_DEV ? FIXED_START : new Date()).getHours());
+    const [minute, setMinute] = useState(() => (IS_DEV ? FIXED_START : new Date()).getMinutes());
+    const listeners = useRef<Set<(unixSeconds: number, hour24: number, minute: number) => void>>(new Set());
 
-    const onMinuteTick = useCallback((callback: (unixSeconds: number) => void) => {
+    const onMinuteTick = useCallback((callback: (unixSeconds: number, hour24: number, minute: number) => void) => {
         listeners.current.add(callback);
         return () => listeners.current.delete(callback);
     }, []);
 
-    // Dev: time-scaled simulation
     const mountedAt = useRef<number>(Date.now());
     const lastMinute = useRef<number>(-1);
 
@@ -48,8 +51,12 @@ export default function TimerProvider({ children }: { children: React.ReactNode 
             if (simMinute !== lastMinute.current) {
                 lastMinute.current = simMinute;
                 const floored = new Date(simMinute * 60000);
+                const h = floored.getHours();
+                const m = floored.getMinutes();
                 setNow(floored);
-                listeners.current.forEach(cb => cb(Math.floor(floored.getTime() / 1000)));
+                setHour24(h);
+                setMinute(m);
+                listeners.current.forEach(cb => cb(Math.floor(floored.getTime() / 1000), h, m));
             }
         };
 
@@ -67,8 +74,12 @@ export default function TimerProvider({ children }: { children: React.ReactNode 
 
     //     const tick = () => {
     //         const now = new Date();
+    //         const h = now.getHours();
+    //         const m = now.getMinutes();
     //         setNow(now);
-    //         listeners.current.forEach(cb => cb(Math.floor(now.getTime() / 1000)));
+    //         setHour(h);
+    //         setMinute(m);
+    //         listeners.current.forEach(cb => cb(Math.floor(now.getTime() / 1000), h, m));
     //     };
 
     //     const timeout = setTimeout(() => {
@@ -83,7 +94,7 @@ export default function TimerProvider({ children }: { children: React.ReactNode 
     // }, []);
 
     return (
-        <TimerContext.Provider value={{ now, onMinuteTick }}>
+        <TimerContext.Provider value={{ now, hour24, minute, onMinuteTick }}>
             {children}
         </TimerContext.Provider>
     );

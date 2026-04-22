@@ -39,9 +39,9 @@
         grid-template-columns: 45px 1fr;
         position: relative;
 
-        > :first-child {
-            overflow: visible;
-        }
+        // > :first-child {
+        //     overflow: visible;
+        // }
 
         .right_columns {
             display: grid;

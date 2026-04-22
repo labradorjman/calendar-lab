@@ -108,7 +108,7 @@ $bg-color: #693a85;
     width: 100%;
     background-color: $bg-color;
     
-    padding: var(--gap_xsmall);
+    padding: var(--gap_small);
     border-radius: var(--gap_xsmall);
     box-sizing: border-box;
 
@@ -124,6 +124,8 @@ $bg-color: #693a85;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+
+        line-height: 1;
     }
 
     .description {
@@ -143,48 +145,7 @@ $bg-color: #693a85;
         color: color-mix(in srgb, #fff 75%, $bg-color);
 
         font-family: "Satoshi-Regular", sans-serif;
-        font-size: var(--font_medium);
-        margin-top: auto;
-    }
-}
-
-// Placeholder is the element being dragged
-.task_backlogged.placeholder,
-.task.placeholder {
-    width: 100%;
-    background-color: $bg-color;
-    
-    padding: var(--gap_xsmall);
-    border-radius: var(--gap_xsmall);
-    box-sizing: border-box;
-
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap_xsmall);
-
-    .name {
-        height: 20px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .time {
-        color: color-mix(in srgb, #fff 75%, $bg-color);
-        
-        max-height: 20px;
-        font-size: var(--font_medium);
-    }
-
-    .description {
-        display: none;
-    }
-
-    .duration {
-        color: color-mix(in srgb, #fff 75%, $bg-color);
-
-        font-family: "Satoshi-Regular", sans-serif;
-        font-size: var(--font_medium);
+        font-size: var(--font_small);
         margin-top: auto;
     }
 }

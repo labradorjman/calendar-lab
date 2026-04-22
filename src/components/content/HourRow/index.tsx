@@ -16,7 +16,7 @@ export default function HourRow({ hour, refSetter }: HourRowProps) {
         <div
             ref={refSetter}
             className={styles.hour_row}
-            style={{ height: `${HOUR_HEIGHT}px` }}
+            style={{ height: `${hour === 23 ? HOUR_HEIGHT + 15 : HOUR_HEIGHT}px` }}     // 15px is the height of the current time text
         >
             <div className={styles.hour_content}>
                 <div className={styles.text}>

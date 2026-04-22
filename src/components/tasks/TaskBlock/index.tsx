@@ -3,7 +3,7 @@ import styles from "./TaskBlock.module.scss";
 import {  useRef } from "react";
 import { useClickDrag } from "@/hooks/useClickDrag";
 import { TaskDragState as TaskDragState, useTaskContext } from "@/taskContext";
-import { get24HourMinuteFromOffset, postgresTimestamptzToUnix, secondsToOffset } from "@/utils/time";
+import { formatDuration, get24HourMinuteFromOffset, postgresTimestamptzToUnix, secondsToOffset } from "@/utils/time";
 import { HourTime } from "@/utils/Time/HourTime";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { HEADER_HEIGHT, HOUR_HEIGHT } from "@/constants/column";
@@ -74,9 +74,10 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         { id: string; rect: DOMRect; dayStartUnix?: number; }[]
     >([]);
 
-    const placeHolderCenter =  (FIXED_PLACEHOLDER_HEIGHT / 2);
-    let scrollDelta = 0;
-    let placeholder: HTMLElement | null = null;
+    const placeHolderCenter = (FIXED_PLACEHOLDER_HEIGHT / 2);
+    const startLeftRef = useRef(0);
+    const startTopRef = useRef(0);
+    const scrollDeltaRef = useRef(0);
     let dragState: TaskDragState = {
         hoverId: null,
         taskTop: null,
@@ -88,7 +89,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         onDragStart: (_, pointerY) => {
             if (!taskRef.current || taskContext.draggedTaskRef.current) return;
 
-            scrollDelta = calendarContext.getScrollTop();
+            scrollDeltaRef.current = calendarContext.getScrollTop();
 
             hoverableRectsRef.current = Array.from(
                 document.querySelectorAll<HTMLElement>("[data-hover-id]")
@@ -103,30 +104,23 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             taskContext.draggedTaskRef.current = { task, timeBlock }
 
             const rect = taskRef.current.getBoundingClientRect();
-
-            // Recenter placeholder to be on top of cursor
-            const placeHolderTop = pointerY - placeHolderCenter;
-
-            placeholder = taskRef.current.cloneNode(true) as HTMLElement;
-            placeholder.classList.add(styles.placeholder);
-            placeholder.style.position = "fixed";
-            placeholder.style.left = `${rect.left}px`;
-            placeholder.style.top = `${placeHolderTop}px`;
-            placeholder.style.width = `${rect.width}px`;
-            placeholder.style.height = `${FIXED_PLACEHOLDER_HEIGHT}px`;
-            placeholder.style.zIndex = "9999";
-            placeholder.style.pointerEvents = "none";
-            document.body.appendChild(placeholder);
+            startLeftRef.current = rect.left;
+            startTopRef.current = pointerY - placeHolderCenter;
+            
+            taskContext.placeholder.show({
+                left: rect.left,
+                top: startTopRef.current,
+                width: rect.width,
+                height: FIXED_PLACEHOLDER_HEIGHT,
+                bgColor: "#693a85",
+            });
 
             taskRef.current.classList.add(styles.hidden);
             taskRef.current.style.pointerEvents = "none";
         },
         onDragMove: (dx, dy, pointerX, pointerY) => {
-            if (!placeholder) return;
-            
-            placeholder.style.transform = `translate(${dx}px, ${dy}px)`;
-
             let match: TaskDragState | null = null;
+            taskContext.placeholder.move(startTopRef.current + dy, startLeftRef.current + dx);
 
             const currentScrollDelta = calendarContext.getScrollTop();
                 
@@ -143,7 +137,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                 const isBacklog = id === "backlog-column";
                 
                 const isColumn = isDayColumn || isBacklog;
-                const offset = isColumn ? 0 : (scrollDelta ?? 0);
+                const offset = isColumn ? 0 : (scrollDeltaRef.current ?? 0);
 
                 const rectTop = rect.top + offset;
                 const rectBottom = rect.bottom + offset;
@@ -166,23 +160,6 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                     let skeletonHeight: number | null = null;
 
                     if (timeBlock && timeBlock.duration > 0) {
-                        const descriptionElement = placeholder?.querySelector(`.${styles.description}`);
-                        descriptionElement?.remove();
-
-                        // Set the text visual for time snapping
-                        let timeElement = placeholder?.querySelector(`.${styles.time}`) as HTMLElement | null;
-
-                        if (!timeElement) {
-                            timeElement = document.createElement("span");
-                            timeElement.className = styles.time;
-
-                            const nameElement = placeholder?.querySelector(`.${styles.name}`);
-
-                            if (nameElement?.parentNode) {
-                                nameElement.parentNode.insertBefore(timeElement, nameElement.nextSibling);
-                            }
-                        }
-
                         let textDisplay = "";
                         if (finalTop != null) {
                             const { hour24, minute } = get24HourMinuteFromOffset(finalTop);
@@ -205,7 +182,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                             skeletonHeight = timeBlock ? (HOUR_HEIGHT / 60) * (timeBlock.duration / 60) : null;
                         }
 
-                        timeElement.textContent = textDisplay;
+                        taskContext.placeholder.update({ timeDisplay: textDisplay});
                     }
                     
                     match = {
@@ -229,6 +206,8 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             taskContext.setTaskDragState(nextState);
         },
         onDragEnd: () => {
+            taskContext.placeholder.hide();
+
             taskContext.setTaskDropState({
                 ...dragState,
                 skeletonTop: null,
@@ -243,11 +222,6 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                 skeletonHeight: null,
             };
 
-            if (placeholder) {
-                placeholder.remove();
-                placeholder = null;
-            }
-
             if (taskRef.current) {
                 taskRef.current.classList.remove(styles.hidden);
                 taskRef.current.style.pointerEvents = "auto";
@@ -256,56 +230,30 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
     });
 
     function getFinalTop(top: number, dayStartUnix: number): number | null {
-        if (!timeBlock?.duration) {
-            return null;
-        }
+        if (!timeBlock?.duration) return null;
 
-        const { hour24, minute } = get24HourMinuteFromOffset(top);
+        const { hour24, minute } = get24HourMinuteFromOffset(Math.max(0, top));
         const hourTime = new HourTime(hour24, minute);
-
         const dayEndUnix = dayStartUnix + 86400;
-        let taskStartUnix = dayStartUnix + hourTime.toSecondsSince();
 
-        if (taskStartUnix + timeBlock.duration > dayEndUnix) {
-            taskStartUnix = dayEndUnix - timeBlock.duration;
-        }
-
-        const hasOverlap = timeBlockContext.hasCollision(
-            taskStartUnix,
-            timeBlock.duration,
-            task.id
+        // Clamp to day boundary
+        const taskStartUnix = Math.min(
+            dayStartUnix + hourTime.toSecondsSince(),
+            dayEndUnix - timeBlock.duration
         );
 
-        let potentialStartUnix: number | null = null;
+        // Resolve collision
+        const hasOverlap = timeBlockContext.hasCollision(taskStartUnix, timeBlock.duration, task.id);
+        const resolvedStart = hasOverlap
+            ? timeBlockContext.findClosestAvailableStart(taskStartUnix, timeBlock.duration, task.id)
+            : taskStartUnix;
 
-        if (hasOverlap) {
-            potentialStartUnix = timeBlockContext.findClosestAvailableStart(
-                taskStartUnix,
-                timeBlock.duration,
-                task.id
-            );
-        }
-        
-        if (hasOverlap && potentialStartUnix == null) {
-            return null;
-        }
+        if (resolvedStart == null) return null;
 
-        const startUnix = hasOverlap ? potentialStartUnix! : taskStartUnix;
-        const taskFinalSeconds = startUnix - dayStartUnix;
-
+        const taskFinalSeconds = resolvedStart - dayStartUnix;
         if (taskFinalSeconds < 0) return null;
 
-        const finalTop = secondsToOffset(taskFinalSeconds);
-        return finalTop;
-    }
-
-    function formatDuration(seconds: number): string {
-        const h = Math.floor(seconds / 3600)
-        const m = Math.floor((seconds % 3600) / 60)
-
-        if (h === 0) return `${m}m`
-        if (m === 0) return `${h}h`
-        return `${h}h ${m}m`
+        return secondsToOffset(taskFinalSeconds);
     }
 
     const startUnix = timeBlock?.startsAt

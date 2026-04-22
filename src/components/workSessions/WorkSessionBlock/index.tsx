@@ -57,17 +57,19 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
         return taskContext.subscribeTaskDrag(state => {
             hoveredRef.current = state.hoverId === workSessionToKey(workSession);
 
-            blockRef.current?.classList.toggle(
-                styles.hovered,
-                hoveredRef.current
-            );
+            blockRef.current?.classList.toggle(styles.hovered, hoveredRef.current);
         });
     }, [taskContext]);
 
     useEffect(() => {
         if (!taskContext.subscribeDragDrop) return;
 
-        return taskContext.subscribeDragDrop(handleTaskDrop);
+        return taskContext.subscribeDragDrop(state => {
+            if (state.hoverId !== workSessionToKey(workSession)) return;
+
+            blockRef.current?.classList.remove(styles.hovered);
+            handleTaskDrop(state);
+        });
     }, [taskContext]);
 
     useEffect(() => {

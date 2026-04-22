@@ -108,7 +108,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         return taskContext.subscribeTaskDrag(state => {
             const isColumnHovered = state.hoverId === dateToKey(date);
             hoveredRef.current = isColumnHovered;
-            
+            console.log("drag");
             taskContainerRef.current?.classList.toggle(styles.hovered, hoveredRef.current);
 
             updateSkeleton(state);
@@ -118,7 +118,14 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     useEffect(() => {
         if (!taskContext.subscribeDragDrop) return;
 
-        return taskContext.subscribeDragDrop(handleTaskDrop);
+        return taskContext.subscribeDragDrop(state => {
+            updateSkeleton(state);
+
+            if (state.hoverId !== dateToKey(date)) return;
+
+            taskContainerRef.current?.classList.remove(styles.hovered);
+            handleTaskDrop(state);
+        });
     }, [taskContext, date]);
 
     const handleTaskDrop = async (state: TaskDragState) => {

@@ -17,7 +17,7 @@ export function useTimer() {
 }
 
 const IS_DEV = process.env.NODE_ENV === "development";
-const FIXED_START = new Date(2026, 3, 22, 23, 50, 0);
+const FIXED_START = new Date(2026, 3, 22, 5, 0, 0);
 const DEV_TIME_SCALE = 50;
 
 export default function TimerProvider({ children }: { children: React.ReactNode }) {

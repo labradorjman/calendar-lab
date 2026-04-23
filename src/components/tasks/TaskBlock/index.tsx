@@ -89,8 +89,10 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
         onDragStart: (_, pointerY) => {
             if (!taskRef.current || taskContext.draggedTaskRef.current) return;
 
+            taskContext.draggedTaskRef.current = { task, timeBlock }
             scrollDeltaRef.current = calendarContext.getScrollTop();
 
+            // Track all hoverable objects
             hoverableRectsRef.current = Array.from(
                 document.querySelectorAll<HTMLElement>("[data-hover-id]")
             ).map(element => ({
@@ -100,8 +102,6 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                     ? parseInt(element.dataset.unixStart, 10)
                     : undefined,
             }));
-
-            taskContext.draggedTaskRef.current = { task, timeBlock }
 
             const rect = taskRef.current.getBoundingClientRect();
             startLeftRef.current = rect.left;
@@ -116,7 +116,7 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
             });
 
             taskRef.current.classList.add(styles.hidden);
-            taskRef.current.style.pointerEvents = "none";
+            taskContext.registerDragSource(taskRef.current, styles.hidden);
         },
         onDragMove: (dx, dy, pointerX, pointerY) => {
             let match: TaskDragState | null = null;
@@ -213,7 +213,13 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                 skeletonTop: null,
                 skeletonHeight: null,
             });
-            taskContext.draggedTaskRef.current = null;
+
+            if (taskRef.current) {
+                if (!taskContext.taskDragState.current.hoverId) {
+                    taskContext.settleDrop();
+                }
+                // Settle is handled by drop receiver if hoverId is not null
+            }
 
             dragState = {
                 hoverId: null,
@@ -221,11 +227,6 @@ export default function TaskBlock({ task, timeBlock, calendarDate, variant = "de
                 skeletonTop: null,
                 skeletonHeight: null,
             };
-
-            if (taskRef.current) {
-                taskRef.current.classList.remove(styles.hidden);
-                taskRef.current.style.pointerEvents = "auto";
-            }
         },
     });
 

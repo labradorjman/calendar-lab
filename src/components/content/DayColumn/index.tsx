@@ -108,7 +108,7 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
         return taskContext.subscribeTaskDrag(state => {
             const isColumnHovered = state.hoverId === dateToKey(date);
             hoveredRef.current = isColumnHovered;
-            console.log("drag");
+
             taskContainerRef.current?.classList.toggle(styles.hovered, hoveredRef.current);
 
             updateSkeleton(state);
@@ -131,64 +131,72 @@ export default function DayColumn({ date, isRightmost}: DayColumnProps) {
     const handleTaskDrop = async (state: TaskDragState) => {
         updateSkeleton(state);
 
-        if (state.hoverId !== dateToKey(date)) return;
+        if (!taskContext.draggedTaskRef.current) {
+            taskContext.settleDrop();
+            return;
+        }
 
-        if (taskContext.draggedTaskRef.current) {
-            const taskId = taskContext.draggedTaskRef.current!.task.id;
+        const taskId = taskContext.draggedTaskRef.current!.task.id;
 
-            if (state.taskTop == null) return;
-            
-            const { hour24, minute } = get24HourMinuteFromOffset(state.taskTop);
-            const hourTime = new HourTime(hour24, minute);
+        if (state.taskTop == null) {
+            taskContext.settleDrop();
+            return;
+        }
+        
+        const { hour24, minute } = get24HourMinuteFromOffset(state.taskTop);
+        const hourTime = new HourTime(hour24, minute);
 
-            const taskTimeBlock = taskContext.draggedTaskRef.current!.timeBlock;
-            const duration = taskTimeBlock?.duration ?? 0;
-            if (duration === 0 || duration < TASK_MIN_DURATION_SECONDS) {
-                console.log("--- Task must be 15 minutes long");
+        const taskTimeBlock = taskContext.draggedTaskRef.current!.timeBlock;
+        const duration = taskTimeBlock?.duration ?? 0;
+        if (duration < TASK_MIN_DURATION_SECONDS) {
+            console.log("--- Task must be 15 minutes long");
+            taskContext.settleDrop();
+            return;
+
+            // Prompt the user to create a work session
+            // Cancelling will send it to backlog
+        }
+
+        if (duration > 0) {
+            const taskStartUnix = calendarDate.startSeconds + hourTime.toSecondsSince();
+            const hasOverlap = timeBlockContext.hasCollision(taskStartUnix, duration, taskId);
+
+            if (hasOverlap) {
+                // Display toast for overlap
+                taskContext.settleDrop();
                 return;
-
-                // Prompt the user to create a work session
-                // Cancelling will send it to backlog
             }
+        }
 
-            if (duration > 0) {
-                const taskStartUnix = calendarDate.startSeconds + hourTime.toSecondsSince();
-                const hasOverlap = timeBlockContext.hasCollision(taskStartUnix, duration, taskId);
-
-                if (hasOverlap) {
-                    // Display toast for overlap
-                    return;
+        const [response, error] = await handlePromise(
+            updateTask(taskId, {
+                task: {
+                    isBacklogged: false
+                },
+                timeBlock: {
+                    id: taskTimeBlock!.id,
+                    startsAt:
+                        calendarDate.builder()
+                        .addSeconds(hourTime.toSecondsSince())
+                        .toISOString()
                 }
-            }
+            })
+        );
 
-            const [response, error] = await handlePromise(
-                updateTask(taskId, {
-                    task: {
-                        isBacklogged: false
-                    },
-                    timeBlock: {
-                        id: taskTimeBlock!.id,
-                        startsAt:
-                            calendarDate.builder()
-                            .addSeconds(hourTime.toSecondsSince())
-                            .toISOString()
-                    }
-                })
+        taskContext.settleDrop();
+        
+        if (!response) {
+            console.error(`Error dragging task [${taskId}] into day column:`, error);
+        } else {
+            updateTasks(prev => 
+                prev.map(t => t.id === response.task.id ? response.task : t)
             );
-            
-            if (!response) {
-                console.error(`Error dragging task [${taskId}] into day column:`, error);
-            } else {
-                updateTasks(prev => 
-                    prev.map(t => t.id === response.task.id ? response.task : t)
+            if (response.timeBlock) {
+                updateTimeBlocks(prev =>
+                    prev.map(tb => tb.id === response.timeBlock!.id ? response.timeBlock! : tb)
                 );
-                if (response.timeBlock) {
-                    updateTimeBlocks(prev =>
-                        prev.map(tb => tb.id === response.timeBlock!.id ? response.timeBlock! : tb)
-                    );
-                }
-                console.log("Dropped task:", response.task.id, "at column", date.toISOString(), "-- At time", hourTime.Time24);
             }
+            console.log("Dropped task:", response.task.id, "at column", date.toISOString(), "-- At time", hourTime.Time24);
         }
     }
 

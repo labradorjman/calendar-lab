@@ -39,32 +39,38 @@ export default function Backlog() {
     const handleDrop = async (state: TaskDragState) => {
         if (state.hoverId !== "backlog-column") return;
 
-        if (taskContext.draggedTaskRef.current) {
-            const taskId = taskContext.draggedTaskRef.current!.task.id;
-            const timeBlockId = taskContext.draggedTaskRef.current!.timeBlock?.id;
-
-            const [response, error] = await handlePromise(
-                updateTask(taskId, {
-                    task: {
-                        isBacklogged: true
-                    },
-                    ...(timeBlockId
-                        ? { timeBlock: { id: timeBlockId, startsAt: null } }
-                        : {})
-                })
-            );
-
-            if (!response) {
-                console.error(`[Backlog] Error updating task [${taskId}]:`, error);
-                return;
-            }
-
-            updateTasks(prev => 
-                prev.map(t => t.id === response.task.id ? response.task : t)
-            );
-            console.log("Dropped task:", response.task.id, "at column", "backlog-column");
+        if (!taskContext.draggedTaskRef.current) {
+            taskContext.settleDrop();
+            return;
         }
+
+        const taskId = taskContext.draggedTaskRef.current!.task.id;
+        const timeBlockId = taskContext.draggedTaskRef.current!.timeBlock?.id;
+
+        const [response, error] = await handlePromise(
+            updateTask(taskId, {
+                task: {
+                    isBacklogged: true
+                },
+                ...(timeBlockId
+                    ? { timeBlock: { id: timeBlockId, startsAt: null } }
+                    : {})
+            })
+        );
+
+        taskContext.settleDrop();
+
+        if (!response) {
+            console.error(`[Backlog] Error updating task [${taskId}]:`, error);
+            return;
+        }
+
+        updateTasks(prev => 
+            prev.map(t => t.id === response.task.id ? response.task : t)
+        );
+        console.log("Dropped task:", response.task.id, "at column", "backlog-column");
     }
+
     const toKey = (type: "task" | "work_session", id: number | string) =>
         `${type}-${id}`;
 

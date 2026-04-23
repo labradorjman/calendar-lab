@@ -27,6 +27,10 @@ interface TaskContextProps {
     setTaskDropState: (taskDragState: TaskDragState) => void;
     subscribeDragDrop?: (callback: (taskDragState: TaskDragState) => void) => () => void;
     placeholder: DragPlaceholderControls;
+
+    dropSettleRef: React.RefObject<(() => void) | null>;
+    registerDragSource: (el: HTMLElement, hiddenClass: string) => void;
+    settleDrop: () => void;
 }
 
 interface TaskContextProviderProps {
@@ -183,6 +187,34 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
         dragDropSubscribers.current.forEach(cb => cb(state));
     };
 
+    // Drop settle
+    const dropSettleRef = useRef<(() => void) | null>(null);
+    const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const registerDragSource = (el: HTMLElement, hiddenClass: string) => {
+        if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
+
+        dropSettleRef.current = () => {
+            el.classList.remove(hiddenClass);
+            dropSettleRef.current = null;
+        };
+
+        fallbackTimerRef.current = setTimeout(() => {
+            dropSettleRef.current?.();
+            dropSettleRef.current = null;
+        }, 3000);
+    };
+
+    const settleDrop = () => {
+        if (fallbackTimerRef.current) {
+            clearTimeout(fallbackTimerRef.current);
+        }
+
+        dropSettleRef.current?.();
+        dropSettleRef.current = null;
+        draggedTaskRef.current = null;
+    };
+
     return (
         <TaskContext.Provider
             value={{
@@ -193,6 +225,9 @@ export default function TaskContextProvider({ children }: TaskContextProviderPro
                 setTaskDropState,
                 subscribeDragDrop,
                 placeholder: placeholder.current,
+                dropSettleRef,
+                registerDragSource,
+                settleDrop,
             }}
         >
             {children}

@@ -87,49 +87,53 @@ export default function WorkSessionBlock({ workSession, timeBlock, sessionTasks,
     }, [timeBlock, sessionTasks]);
 
     const handleTaskDrop = async (state: TaskDragState) => {
-        if (state.hoverId !== workSessionToKey(workSession)) return;
-        
-        if (taskContext.draggedTaskRef.current) {
-            const taskId = taskContext.draggedTaskRef.current!.task.id;
-            const taskTimeBlock = taskContext.draggedTaskRef.current!.timeBlock;
+        if (!taskContext.draggedTaskRef.current) {
+            taskContext.settleDrop();
+            return;
+        }
 
-            const orderIndex = sessionTasks.length > 0
-                ? Math.max(...sessionTasks.map(t => t.orderIndex)) + 1
-                : 0;
+        const taskId = taskContext.draggedTaskRef.current!.task.id;
+        const taskTimeBlock = taskContext.draggedTaskRef.current!.timeBlock;
 
-            const [response, error] = await handlePromise(
-                updateTask(taskId, {
-                    task: {
-                        workSessionId: workSession.id,
-                        orderIndex,
-                        isBacklogged: false,
-                    },
-                    ...(taskTimeBlock?.startsAt
-                        ? {
-                            timeBlock: {
-                                id: taskTimeBlock!.id,
-                                startsAt: null,
-                            }
+        const orderIndex = sessionTasks.length > 0
+            ? Math.max(...sessionTasks.map(t => t.orderIndex)) + 1
+            : 0;
+
+        const [response, error] = await handlePromise(
+            updateTask(taskId, {
+                task: {
+                    workSessionId: workSession.id,
+                    orderIndex,
+                    isBacklogged: false,
+                },
+                ...(taskTimeBlock?.startsAt
+                    ? {
+                        timeBlock: {
+                            id: taskTimeBlock!.id,
+                            startsAt: null,
                         }
-                        : {}
-                    )
-                })
+                    }
+                    : {}
+                )
+            })
+        );
+
+        taskContext.settleDrop();
+
+        if (!response) {
+            console.error(`Error dragging task [${taskId}] into work session:`, error);
+        } else {
+            updateTasks(prev => 
+                prev.map(t => t.id === response.task.id ? response.task : t)
             );
 
-            if (!response) {
-                console.error(`Error dragging task [${taskId}] into work session:`, error);
-            } else {
-                updateTasks(prev => 
-                    prev.map(t => t.id === response.task.id ? response.task : t)
+            if (response.timeBlock) {
+                updateTimeBlocks(prev =>
+                    prev.map(tb => tb.id === response.timeBlock!.id ? response.timeBlock! : tb)
                 );
-
-                if (response.timeBlock) {
-                    updateTimeBlocks(prev =>
-                        prev.map(tb => tb.id === response.timeBlock!.id ? response.timeBlock! : tb)
-                    );
-                }
             }
         }
+
     };
 
     const startSeconds = postgresTimestamptzToUnix(timeBlock.startsAt!) - calendarDate.startSeconds;

@@ -14,134 +14,99 @@ const SEGMENTS = [
 ];
 
 interface TimeInputProps {
-    value?: { time12: string, meridiem: Meridiem };
+    initialValue?: { time12: string; meridiem: Meridiem };
     onTimeChange: (hourTime: HourTime | null) => void;
 }
 
 const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
-    ({ value, onTimeChange }, ref) => {
-        const [time, setTime] = useState<string>("");
-        const [timeStr, setTimeStr] = useState<string>("");
-        const [meridiem, setMeridiem] = useState<Meridiem>("AM");
+    ({ initialValue, onTimeChange }, ref) => {
+        const [displayValue, setDisplayValue] = useState(initialValue?.time12 ?? "");
+        const [meridiem, setMeridiem] = useState<Meridiem>(initialValue?.meridiem ?? "AM");
 
         const inputRef = useRef<HTMLInputElement>(null);
-        const lastValueRef = useRef<{ time12: string, meridiem: Meridiem } | null>(null);
-
-        function handleClear() {
-            setTime("");
-            setTimeStr("");
-            setMeridiem("AM");
-        }
 
         useImperativeHandle(ref, () => ({
-            clear: handleClear
+            clear: () => {
+                setDisplayValue("");
+                setMeridiem("AM");
+                onTimeChange(null);
+            }
         }));
 
-        useEffect(() => {
-            // Time and timeStr not synced up (user is still inputting)
-            if(time !== timeStr) return;
-
-            // Only fire onTimeChange if the change came from local interaction
-            if (lastValueRef.current?.time12 !== time || lastValueRef.current?.meridiem !== meridiem) return;
-            
-            if(!time) {
-                console.log("Return null");
+        const commitTime = (raw: string, currentMeridiem: Meridiem) => {
+            if (!raw || raw.length < 4) {
                 onTimeChange(null);
                 return;
             }
 
-            handleValidTimeChange(time);
-        }, [time, meridiem]);
+            const parts = raw.split(":");
+            const rawHour = Number(parts[0]);
+            const rawMinute = Number(parts[1]);
 
-        useEffect(() => {
-            if (!value) return;
-            
-            setTimeStr(value.time12);
-            setTime(value.time12);
-            setMeridiem(value.meridiem);
-        }, [value]);
-
-        function handleValidTimeChange(validTimeStr: string) {
-            const [hourStr, minuteStr] = validTimeStr.split(":");
-            const hour = parseInt(hourStr, 10);
-            const minute = parseInt(minuteStr, 10);
-
-            onTimeChange(HourTime.from12Hour(hour, minute, meridiem));
-        }
-
-        function normalizeTimeInput(value: string) {
-            const isColonPosition = value.length === 2;
-            if (isColonPosition && !value.endsWith(":")) {
-                return value + ":";
-            }
-
-            return value;
-        }
-
-        function setCompleteTime(e: React.FocusEvent<HTMLInputElement>) {
-            const value = e.target.value;
-            if (!value) return "";
-
-            // Only complete (fill in) and validate string if the user enters a full value for the last segment
-            if (value.length < 4) return value;
-
-            const parts = value.split(":");
-
-            let hourStr = parts[0] ?? "";
-            let minuteStr = parts[1] ?? "";
-
-            const rawHour = Number(hourStr);
-            const rawMinute = Number(minuteStr);
-
+            // Clamp to valid 12-hour range
             const hour =
                 Number.isInteger(rawHour) && rawHour >= 1 && rawHour <= 12
                     ? rawHour
                     : 12;
-
             const minute =
                 Number.isInteger(rawMinute) && rawMinute >= 0 && rawMinute <= 59
                     ? rawMinute
                     : 0;
 
-            const finalTime = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+            const finalDisplay = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+            setDisplayValue(finalDisplay);
+            onTimeChange(HourTime.from12Hour(hour, minute, currentMeridiem));
+        };
 
-            lastValueRef.current = { time12: finalTime, meridiem };
-            setTimeStr(finalTime);
-            setTime(finalTime.length === 5 ? finalTime : "");
-        }
+        const pendingMeridiemCommit = useRef(false);
 
-        function handleBackspace(e: React.KeyboardEvent<HTMLInputElement>) {
+        const handleMeridiemToggle = () => {
+            // Flag that the next meridiem state change should trigger a commit
+            pendingMeridiemCommit.current = true;
+            setMeridiem(prev => (prev === "AM" ? "PM" : "AM"));
+        };
+
+        useEffect(() => {
+            // Only runs after a meridiem toggle, not on initial mount
+            if (!pendingMeridiemCommit.current) return;
+            
+            pendingMeridiemCommit.current = false;
+            commitTime(displayValue, meridiem);
+        }, [meridiem]);
+
+        const normalizeTimeInput = (value: string) => {
+            // Auto-insert colon after the hour digits (e.g. "09" → "09:")
+            if (value.length === 2 && !value.endsWith(":")) {
+                return value + ":";
+            }
+            return value;
+        };
+
+        const handleBackspace = (e: React.KeyboardEvent<HTMLInputElement>) => {
             const input = e.currentTarget;
             const pos = input.selectionStart ?? 0;
             const end = input.selectionEnd ?? pos;
 
-            if (pos !== end) {
-                return;
-            }
+            // If there's a selection let the browser handle it normally
+            if (pos !== end) return;
 
-            const isColonAtBoundary = pos === 3;
-
-            if (isColonAtBoundary) {
+            // At position 3 the cursor is right after the colon — backspace should
+            // remove the colon, not the digit before it
+            if (pos === 3) {
                 e.preventDefault();
-                setTimeStr(prev => {
-                    if(timeStr.endsWith(":")) {
-                        return timeStr.slice(0, -1); 
-                    }
-                    return prev;
-                });
-
-                return;
+                setDisplayValue(prev => (prev.endsWith(":") ? prev.slice(0, -1) : prev));
             }
-        }
+        };
 
-        function handleTab(e: React.KeyboardEvent<HTMLInputElement>) {
+        const handleTab = (e: React.KeyboardEvent<HTMLInputElement>) => {
             const input = e.currentTarget;
             const pos = input.selectionStart ?? 0;
+            const chars = displayValue.split("");
 
-            const chars = timeStr.split("");
-
-            let segment = SEGMENTS.find(s => pos > s.start && pos <= s.end)
-                || SEGMENTS.find(s => pos + 1 > s.start && pos + 1 <= s.end);
+            // Find which segment (hour / minute) the cursor is in
+            const segment =
+                SEGMENTS.find(s => pos > s.start && pos <= s.end) ||
+                SEGMENTS.find(s => pos + 1 > s.start && pos + 1 <= s.end);
 
             if (!segment) {
                 console.error("Cannot find time segment for position:", pos);
@@ -150,16 +115,18 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
 
             const { name, start, end } = segment;
             const today = new Date();
-
             let tabValue = "";
 
             const isEmpty = start === chars.length;
+
             if (isEmpty) {
+                // Segment not started yet — fill with current time value
                 switch (name) {
-                    case "hour":
+                    case "hour": {
                         const hour12 = today.getHours() % 12 || 12;
                         tabValue = hour12.toString().padStart(2, "0");
                         break;
+                    }
                     case "minute":
                         tabValue = today.getMinutes().toString().padStart(2, "0");
                         break;
@@ -178,9 +145,8 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
             }
 
             const startValue = start > 0 ? chars.slice(0, start).join("") : "";
-            const normalized = normalizeTimeInput(`${startValue}${tabValue}`);
-            setTimeStr(normalized);
-        }
+            setDisplayValue(normalizeTimeInput(`${startValue}${tabValue}`));
+        };
 
         return (
             <div className={styles.wrapper}>
@@ -189,32 +155,16 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
                     className={styles.input}
                     mask={"dd:dd"}
                     placeholder={"hh:mm"}
-                    value={timeStr}
-                    onBlur={(e) => {
-                        setCompleteTime(e);
-                    }}
+                    value={displayValue}
+                    onBlur={() => commitTime(displayValue, meridiem)}
                     onKeyDown={(e) => {
-                        if (e.key === "Backspace") {
-                            handleBackspace(e);
-                        } else if (e.key === "Tab") {
-                            handleTab(e);
-                        }
+                        if (e.key === "Backspace") handleBackspace(e);
+                        else if (e.key === "Tab") handleTab(e);
                     }}
-                    onChange={(value) => {
-                        const normalized = normalizeTimeInput(value);
-                        lastValueRef.current = { time12: normalized, meridiem };
-                        setTimeStr(normalized);
-                    }}
+                    onChange={(value) => setDisplayValue(normalizeTimeInput(value))}
                 />
                 <div className={styles.meridiem_area}>
-                    <span
-                        className={styles.select}
-                        onClick={() => setMeridiem((prev) => {
-                            const next = prev === "AM" ? "PM" : "AM";
-                            lastValueRef.current = { time12: time, meridiem: next };
-                            return next;
-                        })}
-                    >
+                    <span className={styles.select} onClick={handleMeridiemToggle}>
                         {meridiem}
                     </span>
                 </div>
@@ -223,4 +173,5 @@ const TimeInput = forwardRef<ClearableHandle, TimeInputProps>(
     }
 );
 
+TimeInput.displayName = "TimeInput";
 export default TimeInput;

@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import { createWorkSession, updateWorkSession } from "@/services/workSessionService";
 import { useCalendarContext } from "@/context";
-import { ParsedDateParts } from "@/types/dateFormat";
 import { ClearableHandle } from "@/types/componentHandles";
 import { HourTime } from "@/utils/Time/HourTime";
 import DateSelector from "@/components/ui/DateSelector";
@@ -26,148 +25,160 @@ interface WorkSessionModalProps extends Omit<ModalProps, "children"> {
         workSession?: WorkSession;
         timeBlock?: TimeBlock;
     }) => void;
-
     onWorkSessionUpdate: (data: {
         workSession?: WorkSession;
         timeBlock?: TimeBlock | null;
     }) => void;
 }
 
-export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: onWorkSessionCreate, onWorkSessionUpdate}: WorkSessionModalProps) {
+export default function WorkSessionModal({ open, onClose, onWorkSessionCreate, onWorkSessionUpdate }: WorkSessionModalProps) {
     const calendarContext = useCalendarContext();
 
     const [workSession, setWorkSession] = useState<Omit<WorkSession, "id">>(createDefaultWorkSession);
-    const [startsAt, setStartsAt] = useState<string | null>(null);
     const [durationMinutes, setDurationMinutes] = useState<number>(0);
 
     const [isWorkSessionEdited, setIsWorkSessionEdited] = useState<boolean>(false);
     const [isTimeBlockEdited, setIsTimeBlockEdited] = useState<boolean>(false);
     const [isTimeBlockValid, setIsTimeBlockValid] = useState<boolean>(false);
 
-    const [parsedDateParts, setParsedDateParts] = useState<ParsedDateParts | null>(null);
+    const startsAtRef = useRef<string | null>(null);
+
+    const [inputKey, setInputKey] = useState(0);
+    const [initialDateStr, setInitialDateStr] = useState<string | undefined>(undefined);
+    const [initialTimeValue, setInitialTimeValue] = useState<{ time12: string; meridiem: "AM" | "PM" } | undefined>(undefined);
 
     const dateRef = useRef<ClearableHandle>(null);
     const timeRef = useRef<ClearableHandle>(null);
 
+
     const dateValueRef = useRef<Date | null>(null);
     const hourTimeRef = useRef<HourTime | null>(null);
 
-    const isClearing = useRef<boolean>(false);
-
+    // On modal open
     useEffect(() => {
         if (!open) return;
 
-        setWorkSession(() => ({
-            ...createDefaultWorkSession(),
-            ...calendarContext.modalWorkSession?.workSession,
-        }));
-
         const modal = calendarContext.modalWorkSession;
-        if (!modal) return;
 
-        setIsTimeBlockValid(
-            modal.mode === "edit"
-                ? modal.timeBlock?.startsAt != null && (modal.timeBlock?.duration ?? 0) > 0
-                : startsAt != null && durationMinutes * 60 >= WORK_SESSION_MIN_DURATION_SECONDS
-        );
+        setWorkSession({ ...createDefaultWorkSession(), ...modal?.workSession });
+        setIsWorkSessionEdited(false);
+        setIsTimeBlockEdited(false);
 
         const modalStartsAt =
-            modal.mode === "edit"
-                ? modal.timeBlock?.startsAt
-                : modal.startsAt;
+            modal?.mode === "edit"
+                ? modal.timeBlock?.startsAt ?? null
+                : modal?.startsAt ?? null;
 
         if (modalStartsAt) {
-            setParsedDateParts(parseIsoDateParts(modalStartsAt, DATE_FORMAT));
+            const parts = parseIsoDateParts(modalStartsAt, DATE_FORMAT);
+            setInitialDateStr(parts.formattedDate);
+            setInitialTimeValue({ time12: parts.time12, meridiem: parts.meridiem });
+
+            startsAtRef.current = modalStartsAt;
+            dateValueRef.current = new Date(modalStartsAt);
+        } else {
+            setInitialDateStr(undefined);
+            setInitialTimeValue(undefined);
+            startsAtRef.current = null;
+            dateValueRef.current = null;
+            hourTimeRef.current = null;
         }
 
-        setDurationMinutes(() => {
-            const durationSeconds =
-                modal.mode === "edit"
-                    ? modal.timeBlock?.duration
-                    : modal.duration;
-                    
-            if (!durationSeconds || durationSeconds === 0) return 0;
+        setInputKey(prev => prev + 1);
 
-            return Math.floor(durationSeconds / 60);
-        });
+        const durationSeconds =
+            modal?.mode === "edit"
+                ? modal.timeBlock?.duration
+                : modal?.duration;
+
+        const resolvedMinutes = durationSeconds && durationSeconds > 0
+            ? Math.floor(durationSeconds / 60)
+            : 0;
+
+        setDurationMinutes(resolvedMinutes);
+
+        setIsTimeBlockValid(
+            modal?.mode === "edit"
+                ? modal.timeBlock?.startsAt != null && (modal.timeBlock?.duration ?? 0) >= WORK_SESSION_MIN_DURATION_SECONDS
+                : false
+        );
     }, [open]);
 
     useEffect(() => {
         const modal = calendarContext.modalWorkSession;
         if (!modal || modal.mode !== "edit" || !modal.workSession) return;
-
+        
         setIsWorkSessionEdited(!isTaskEqual(modal.workSession, workSession));
     }, [workSession, calendarContext.modalWorkSession]);
 
-    useEffect(() => {
+    const handleDateTimeChange = () => {
+        if (!dateValueRef.current || !hourTimeRef.current) {
+            startsAtRef.current = null;
+            updateValidityAndEdited(null, durationMinutes);
+            return;
+        }
+
+        const date = new Date(dateValueRef.current);
+        date.setHours(0, 0, 0, 0);
+
+        const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
+        const totalUnixSeconds = calendarDate.startSeconds + hourTimeRef.current.toSecondsSince();
+        const newStart = new Date(totalUnixSeconds * 1000).toISOString();
+
+        startsAtRef.current = newStart;
+        updateValidityAndEdited(newStart, durationMinutes);
+    };
+
+    const updateValidityAndEdited = (newStartsAt: string | null, minutes: number) => {
         const modal = calendarContext.modalWorkSession;
-        if (!modal) return;
-        
+
+        const durationSeconds = minutes * 60;
         setIsTimeBlockValid(
-            startsAt != null &&
-            durationMinutes * 60 >= WORK_SESSION_MIN_DURATION_SECONDS
+            newStartsAt != null && durationSeconds >= WORK_SESSION_MIN_DURATION_SECONDS
         );
+
+        if (!modal) return;
 
         const isEdited =
             modal.mode === "create"
                 ? true
-                : (modal.timeBlock?.startsAt !== startsAt ||
-                modal.timeBlock?.duration !== durationMinutes * 60);
+                : modal.timeBlock?.startsAt !== newStartsAt ||
+                  modal.timeBlock?.duration !== durationSeconds;
 
         setIsTimeBlockEdited(isEdited);
-    }, [startsAt, durationMinutes, calendarContext.modalWorkSession]);
+    };
 
+    const handleDateTimeClear = () => {
+        dateRef.current?.clear();
+        timeRef.current?.clear();
+        dateValueRef.current = null;
+        hourTimeRef.current = null;
+        startsAtRef.current = null;
+        updateValidityAndEdited(null, durationMinutes);
+    };
+
+    // Field change
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setWorkSession(prev => ({
-            ...prev,
-            name: e.target.value
-        }));
+        setWorkSession(prev => ({ ...prev, name: e.target.value }));
     };
 
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.value === "") {
             setDurationMinutes(0);
+            updateValidityAndEdited(startsAtRef.current, 0);
             return;
         }
-
-        let val = parseInt(e.target.value);
+        const val = parseInt(e.target.value);
         if (isNaN(val)) return;
 
         setDurationMinutes(val);
-    }
+        updateValidityAndEdited(startsAtRef.current, val);
+    };
 
-    const handleDateTimeChange = (element: "date" | "time") => {
-        if (isClearing.current) {
-            isClearing.current = false;
-            if (element === "date") return;
-        }
-
-        if (!dateValueRef.current || !hourTimeRef.current) {
-            setStartsAt(null);
-            return;
-        }
-
-        const date = dateValueRef.current!;
-        date.setHours(0, 0, 0, 0);
-
-        const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
-        const totalUnixSeconds = calendarDate.startSeconds + hourTimeRef.current!.toSecondsSince();
-
-        const newStart = new Date(totalUnixSeconds * 1000).toISOString();
-        if (newStart === startsAt) return;
-
-        setParsedDateParts(parseIsoDateParts(newStart, DATE_FORMAT));
-        setStartsAt(newStart);
-    }
-    
-    const handleDateTimeClear = () => {
-        setParsedDateParts(null);
-        isClearing.current = true;
-        dateRef.current?.clear();
-        timeRef.current?.clear();
-    }
-
+    // Create
     const handleCreate = async () => {
+        const startsAt = startsAtRef.current;
+
         const [response, error] = await handlePromise(
             createWorkSession({
                 workSession,
@@ -179,21 +190,22 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: o
         );
 
         if (error) {
-            console.error(`[Work session modal] Error creating work session.`);
+            console.error("[Work session modal] Error creating work session.");
             return;
-        } else {
-            onWorkSessionCreate({
-                workSession: response?.workSession,
-                timeBlock: response?.timeBlock,
-            });
         }
+
+        onWorkSessionCreate({
+            workSession: response?.workSession,
+            timeBlock: response?.timeBlock,
+        });
         onClose();
-    }
+    };
 
     const handleEdit = async () => {
         const modal = calendarContext.modalWorkSession;
         if (!modal || modal.mode !== "edit") return;
 
+        const startsAt = startsAtRef.current;
 
         const [response, error] = await handlePromise(
             updateWorkSession(modal.workSession.id, {
@@ -209,20 +221,17 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: o
         if (error) {
             console.error(`[Work session modal] Error editing work session [${modal.workSession.id}]`);
             return;
-        } else {
-            onWorkSessionUpdate({
-                workSession: response?.workSession,
-                timeBlock: response?.timeBlock,
-            });
         }
+
+        onWorkSessionUpdate({
+            workSession: response?.workSession,
+            timeBlock: response?.timeBlock,
+        });
         onClose();
-    }
+    };
 
     return (
-        <Modal
-            open={open}
-            onClose={onClose}
-        >
+        <Modal open={open} onClose={onClose}>
             <div className={styles.work_session_modal}>
                 <div className={styles.content}>
                     <div className={`${styles.input_area} ${styles.name_input}`}>
@@ -237,12 +246,9 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: o
                         <span className={styles.label}>Color</span>
                         <ColorSelector
                             color={workSession.color}
-                            onColorChange={(newColor: string) => {
-                                setWorkSession(prev => ({
-                                    ...prev,
-                                    color: newColor,
-                                }))
-                            }}
+                            onColorChange={(newColor: string) =>
+                                setWorkSession(prev => ({ ...prev, color: newColor }))
+                            }
                         />
                     </div>
                     <div className={`${styles.input_area} ${styles.duration_input}`}>
@@ -256,22 +262,23 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: o
                     </div>
                     <div className={`${styles.input_area} ${styles.date_input}`}>
                         <span className={styles.label}>Starts at</span>
-
                         <div className={styles.date_row}>
                             <DateSelector
+                                key={`date-${inputKey}`}
                                 ref={dateRef}
-                                value={parsedDateParts?.formattedDate}
-                                onDateChange={(date: Date | null) => {
+                                initialValue={initialDateStr}
+                                onDateChange={(date) => {
                                     dateValueRef.current = date;
-                                    handleDateTimeChange("date");
+                                    handleDateTimeChange();
                                 }}
                             />
                             <TimeInput
+                                key={`time-${inputKey}`}
                                 ref={timeRef}
-                                value={parsedDateParts ? { time12: parsedDateParts.time12, meridiem: parsedDateParts.meridiem } : undefined}
-                                onTimeChange={(hourTime: HourTime | null) => {
+                                initialValue={initialTimeValue}
+                                onTimeChange={(hourTime) => {
                                     hourTimeRef.current = hourTime;
-                                    handleDateTimeChange("time");
+                                    handleDateTimeChange();
                                 }}
                             />
                             <span onClick={handleDateTimeClear}>Clear</span>
@@ -294,9 +301,8 @@ export default function WorkSessionModal({ open, onClose, onWorkSessionCreate: o
                             onClick={handleEdit}
                             disabled={
                                 !workSession.name.trim() ||
-                                (!isWorkSessionEdited &&
-                                !isTimeBlockEdited &&
-                                !isTimeBlockValid)
+                                (!isWorkSessionEdited && !isTimeBlockEdited) ||
+                                !isTimeBlockValid
                             }
                         >
                             Edit

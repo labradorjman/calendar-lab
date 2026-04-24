@@ -15,34 +15,29 @@ import { HourTime } from "@/utils/Time/HourTime";
 import { CalendarDate } from "@/utils/Time/CalendarDate";
 import { DATE_FORMAT, TIMEZONE } from "@/constants/calendar";
 import { ClearableHandle } from "@/types/componentHandles";
-import { ParsedDateParts } from "@/types/dateFormat";
 import { parseIsoDateParts } from "@/utils/dateParser";
 import { TimeBlock } from "@/models/timeBlock";
 import { handlePromise } from "@/utils/handleError";
 
 interface TaskModalProps extends Omit<ModalProps, "children"> {
-    onTaskCreate: (data: {
-        task?: Task;
-        timeBlock?: TimeBlock | null;
-    }) => void;
-    onTaskUpdate: (data: {
-        task?: Task;
-        timeBlock?: TimeBlock | null;
-        deletedTimeBlockId?: number;
-    }) => void;
+    onTaskCreate: (data: { task?: Task; timeBlock?: TimeBlock | null }) => void;
+    onTaskUpdate: (data: { task?: Task; timeBlock?: TimeBlock | null; deletedTimeBlockId?: number }) => void;
 }
 
-export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, onTaskUpdate }: TaskModalProps) {
+export default function TaskModal({ open, onClose, onTaskCreate, onTaskUpdate }: TaskModalProps) {
     const calendarContext = useCalendarContext();
 
     const [task, setTask] = useState<Omit<Task, "id">>(createDefaultTask);
-    const [startsAt, setStartsAt] = useState<string | null>(null);
     const [durationMinutes, setDurationMinutes] = useState<number>(0);
 
     const [isTaskEdited, setIsTaskEdited] = useState<boolean>(false);
     const [isTimeBlockEdited, setIsTimeBlockEdited] = useState<boolean>(false);
 
-    const [parsedDateParts, setParsedDateParts] = useState<ParsedDateParts | null>(null);
+    const startsAtRef = useRef<string | null>(null);
+
+    const [inputKey, setInputKey] = useState(0);
+    const [initialDateStr, setInitialDateStr] = useState<string | undefined>(undefined);
+    const [initialTimeValue, setInitialTimeValue] = useState<{ time12: string; meridiem: "AM" | "PM" } | undefined>(undefined);
 
     const dateRef = useRef<ClearableHandle>(null);
     const timeRef = useRef<ClearableHandle>(null);
@@ -50,38 +45,48 @@ export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, o
     const dateValueRef = useRef<Date | null>(null);
     const hourTimeRef = useRef<HourTime | null>(null);
 
-    const isClearing = useRef<boolean>(false);
-
+    // On modal open
     useEffect(() => {
         if (!open || !calendarContext.modalTask) return;
 
-        setTask(()=> ({
-            ...createDefaultTask(),
-            ...calendarContext.modalTask?.task,
-        }));
-
         const modal = calendarContext.modalTask;
-        if (!modal) return;
+
+        // Reset fields
+        setTask({ ...createDefaultTask(), ...modal.task });
+        setIsTaskEdited(false);
+        setIsTimeBlockEdited(false);
 
         const modalStartsAt =
             modal.mode === "edit"
-                ? modal.timeBlock?.startsAt
-                : modal.startsAt;
+                ? modal.timeBlock?.startsAt ?? null
+                : modal.startsAt ?? null;
 
         if (modalStartsAt) {
-            setParsedDateParts(parseIsoDateParts(modalStartsAt, DATE_FORMAT));
+            const parts = parseIsoDateParts(modalStartsAt, DATE_FORMAT);
+            setInitialDateStr(parts.formattedDate);
+            setInitialTimeValue({ time12: parts.time12, meridiem: parts.meridiem });
+
+            startsAtRef.current = modalStartsAt;
+            dateValueRef.current = new Date(modalStartsAt);
+        } else {
+            setInitialDateStr(undefined);
+            setInitialTimeValue(undefined);
+            startsAtRef.current = null;
+            dateValueRef.current = null;
+            hourTimeRef.current = null;
         }
 
-        setDurationMinutes(() => {
-            const durationSeconds =
-                modal.mode === "edit"
-                    ? modal.timeBlock?.duration
-                    : modal.duration;
-                    
-            if (!durationSeconds || durationSeconds === 0) return 0;
+        setInputKey(prev => prev + 1);
 
-            return Math.floor(durationSeconds / 60);
-        });
+        const durationSeconds =
+            modal.mode === "edit"
+                ? modal.timeBlock?.duration
+                : modal.duration;
+
+        setDurationMinutes(durationSeconds && durationSeconds > 0
+            ? Math.floor(durationSeconds / 60)
+            : 0
+        );
     }, [open]);
 
     useEffect(() => {
@@ -91,29 +96,52 @@ export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, o
         setIsTaskEdited(!isTaskEqual(modal.task, task));
     }, [task, calendarContext.modalTask]);
 
-    useEffect(() => {
+    const handleDateTimeChange = () => {
+        if (!dateValueRef.current || !hourTimeRef.current) {
+            startsAtRef.current = null;
+
+            updateTimeBlockEdited(null);
+            return;
+        }
+
+        const date = new Date(dateValueRef.current);
+        date.setHours(0, 0, 0, 0);
+
+        const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
+        const totalUnixSeconds = calendarDate.startSeconds + hourTimeRef.current.toSecondsSince();
+        const newStart = new Date(totalUnixSeconds * 1000).toISOString();
+
+        startsAtRef.current = newStart;
+        updateTimeBlockEdited(newStart);
+    };
+
+    const updateTimeBlockEdited = (newStartsAt: string | null) => {
         const modal = calendarContext.modalTask;
         if (!modal || modal.mode !== "edit") return;
 
         const isEdited =
-            modal.timeBlock?.startsAt !== startsAt ||
+            modal.timeBlock?.startsAt !== newStartsAt ||
             modal.timeBlock?.duration !== durationMinutes * 60;
 
         setIsTimeBlockEdited(isEdited);
-    }, [startsAt, durationMinutes, calendarContext.modalTask]);
+    };
 
+    const handleDateTimeClear = () => {
+        dateRef.current?.clear();
+        timeRef.current?.clear();
+        dateValueRef.current = null;
+        hourTimeRef.current = null;
+        startsAtRef.current = null;
+        updateTimeBlockEdited(null);
+    };
+
+    // Field change
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setTask(prev => ({
-            ...prev,
-            name: e.target.value
-        }));
+        setTask(prev => ({ ...prev, name: e.target.value }));
     };
 
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setTask(prev => ({
-            ...prev,
-            description: e.target.value
-        }));
+        setTask(prev => ({ ...prev, description: e.target.value }));
     };
 
     const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,107 +149,60 @@ export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, o
             setDurationMinutes(0);
             return;
         }
-
-        let val = parseInt(e.target.value);
+        const val = parseInt(e.target.value);
         if (isNaN(val)) return;
 
         setDurationMinutes(val);
-
-        setTask(prev => ({
-            ...prev,
-            duration: val * 60,
-        }));
+        setTask(prev => ({ ...prev, duration: val * 60 }));
     };
 
     const handleIsImportantChange = (value: boolean) => {
-        setTask(prev => ({
-            ...prev,
-            isImportant: value
-        }));
-    }
+        setTask(prev => ({ ...prev, isImportant: value }));
+    };
 
-    const handleDateTimeChange = (element: "date" | "time") => {
-        if (isClearing.current) {
-            isClearing.current = false;
-
-            if (element === "date") return;
-        }
-
-        if (!dateValueRef.current || !hourTimeRef.current) {
-            setStartsAt(null);
-            return;
-        }
-
-        const date = dateValueRef.current!;
-        date.setHours(0, 0, 0, 0);
-
-        const calendarDate = new CalendarDate({ format: "date", date, timezone: TIMEZONE });
-        const totalUnixSeconds = calendarDate.startSeconds + hourTimeRef.current!.toSecondsSince();
-
-        const newStart = new Date(totalUnixSeconds * 1000).toISOString();
-        if (newStart === startsAt) return;
-        
-        setStartsAt(newStart);
-    }
-
-    const handleDateTimeClear = () => {
-        setParsedDateParts(null);
-        isClearing.current = true;
-        dateRef.current?.clear();
-        timeRef.current?.clear();
-    }
-
+    // Create
     const handleCreate = async () => {
+        const startsAt = startsAtRef.current;
+
         const taskToCreate: Omit<Task, "id"> = {
             ...task,
             isBacklogged: !startsAt,
             createdAt: new Date().toISOString(),
-        }
+        };
 
-        const timeBlockPayload = startsAt === null && durationMinutes === 0
-            ? null
-            : {
-                startsAt: startsAt,
-                duration: durationMinutes * 60,
-            }
+        const timeBlockPayload =
+            startsAt === null && durationMinutes === 0
+                ? null
+                : { startsAt, duration: durationMinutes * 60 };
 
         const [response, error] = await handlePromise(
-            createTask({
-                task: taskToCreate,
-                timeBlock: timeBlockPayload,
-            })
+            createTask({ task: taskToCreate, timeBlock: timeBlockPayload })
         );
 
         if (error) {
-            console.error(`[Task Modal] Error creating task.`);
+            console.error("[Task Modal] Error creating task.");
             return;
-        } else {
-            onTaskCreate({
-                task: response?.task,
-                timeBlock: response?.timeBlock,
-            });
         }
 
+        onTaskCreate({ task: response?.task, timeBlock: response?.timeBlock });
         onClose();
-    }
+    };
 
     const handleEdit = async () => {
         const modal = calendarContext.modalTask;
         if (!modal || modal.mode !== "edit") return;
 
-        const hasTimeBlock = startsAt !== null || durationMinutes !== 0;
+        const startsAt = startsAtRef.current;
+
         const timeBlockPayload = modal.timeBlock
             ? (startsAt === null && durationMinutes === 0
                 ? null
                 : {
                     id: modal.timeBlock.id,
-                    startsAt: startsAt,
+                    startsAt,
                     duration: durationMinutes * 60,
                 })
-            : {
-                startsAt: startsAt,
-                duration: durationMinutes * 60,
-            };
+            : { startsAt, duration: durationMinutes * 60 };
 
         const [response, error] = await handlePromise(
             updateTask(modal.task.id, {
@@ -236,41 +217,30 @@ export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, o
         if (error) {
             console.error(`[Task Modal] Error editing task [${modal.task.id}]`);
             return;
-        } else {
-            onTaskUpdate({
-                task: response?.task,
-                timeBlock: response?.timeBlock,
-                deletedTimeBlockId: response?.deletedTimeBlockId,
-            });
         }
+
+        onTaskUpdate({
+            task: response?.task,
+            timeBlock: response?.timeBlock,
+            deletedTimeBlockId: response?.deletedTimeBlockId,
+        });
         onClose();
-    }
+    };
 
     return (
         <Modal
             open={open}
-            onClose={() => {
-                setParsedDateParts(null);
-                onClose();
-            }}
+            onClose={onClose}
         >
             <div className={styles.task_modal}>
                 <div className={styles.content}>
                     <div className={`${styles.input_area} ${styles.name_input}`}>
                         <span className={styles.label}>Name</span>
-                        <Input
-                            placeholder=""
-                            value={task.name}
-                            onChange={handleNameChange}
-                        />
+                        <Input placeholder="" value={task.name} onChange={handleNameChange} />
                     </div>
                     <div className={`${styles.input_area} ${styles.description_input}`}>
                         <span className={styles.label}>Description</span>
-                        <Input
-                            placeholder=""
-                            value={task.description ?? ""}
-                            onChange={handleDescriptionChange}
-                        />
+                        <Input placeholder="" value={task.description ?? ""} onChange={handleDescriptionChange} />
                     </div>
                     <div className={`${styles.input_area} ${styles.duration_input}`}>
                         <span className={styles.label}>Duration</span>
@@ -283,29 +253,23 @@ export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, o
                     </div>
                     <div className={`${styles.input_area} ${styles.date_input}`}>
                         <span className={styles.label}>Starts at</span>
-
                         <div className={styles.date_row}>
                             <DateSelector
+                                key={`date-${inputKey}`}
                                 ref={dateRef}
-                                defaultValue={parsedDateParts?.formattedDate}
-                                onDateChange={(date: Date | null) => {
+                                initialValue={initialDateStr}
+                                onDateChange={(date) => {
                                     dateValueRef.current = date;
-                                    handleDateTimeChange("date");
+                                    handleDateTimeChange();
                                 }}
                             />
                             <TimeInput
+                                key={`time-${inputKey}`}
                                 ref={timeRef}
-                                defaultValue={
-                                parsedDateParts
-                                    ? {
-                                        time12: parsedDateParts.time12,
-                                        meridiem: parsedDateParts.meridiem,
-                                    }
-                                    : undefined
-                                }
-                                onTimeChange={(hourTime: HourTime | null) => {
+                                initialValue={initialTimeValue}
+                                onTimeChange={(hourTime) => {
                                     hourTimeRef.current = hourTime;
-                                    handleDateTimeChange("time");
+                                    handleDateTimeChange();
                                 }}
                             />
                             <span onClick={handleDateTimeClear}>Clear</span>
@@ -333,11 +297,7 @@ export default function TaskModal({ open, onClose, onTaskCreate: onTaskCreate, o
                         <Button
                             element="button"
                             onClick={handleEdit}
-                            disabled={
-                                !task.name.trim() ||
-                                (!isTaskEdited &&
-                                !isTimeBlockEdited)
-                            }
+                            disabled={!task.name.trim() || (!isTaskEdited && !isTimeBlockEdited)}
                         >
                             Edit
                         </Button>
